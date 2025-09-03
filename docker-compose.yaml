@@ -1,0 +1,18 @@
+services:
+  app:
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cmjedunn/logicgate:webapp
+
+    environment:
+      DB_URL: #mongo db url here
+      PORT: 3000
+      NODE_ENV: production
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+volumes:
+  mongo-data:
