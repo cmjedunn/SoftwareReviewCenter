@@ -7,12 +7,18 @@ export default function Navbar() {
         <nav className={styles.navbar}>
             <div className={styles.logo}>
                 <Link to="/">
-                    <image src={logo} alt="Logo" classname={styles.logo} />
+                    <img src={logo} alt="Logo" className={styles.logo} />
                 </Link>
             </div>
-            <ul className={styles.navLinks}>
-                <li><Link to="/endpoint"></Link></li>
-            </ul>
+            <div className={styles.name}>
+                <p>Software Review Manager</p>
+            </div>
+            <div className={styles.navlinks}>
+                <ul>
+                    <li><Link to="/applications">Applications</Link></li>
+                </ul>
+            </div>
+
         </nav>
     );
 }
