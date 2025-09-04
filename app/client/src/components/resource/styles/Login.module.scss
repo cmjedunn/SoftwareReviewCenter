@@ -1,0 +1,79 @@
+.loginContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+}
+
+.userInfo {
+    
+}
+
+.userDropdown {
+    position: relative;
+    display: inline-block;
+
+    &:hover .dropdownMenu {
+        display: block;
+    }
+}
+
+.userTrigger {
+    display: flex;
+    align-items: center;
+    vertical-align: middle;
+    cursor: pointer;
+    padding: 0 .2rem;
+}
+
+.userPhoto {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    margin-left: 8px;
+    display: inline-flex;
+    vertical-align: middle;
+
+}
+
+.userName {
+    font-family: var(--font-heading);
+    margin: 0;
+    padding: 0;
+    line-height: normal;
+
+}
+
+.dropdownMenu {
+    display: none;
+    width: 100%;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    padding: 0px;
+    z-index: 100;
+    background-color: var(--color-primary);
+
+    button {
+        background: none;
+        border: none;
+        padding: 8px;
+        width: 100%;
+        text-align: left;
+        line-height: .5;
+        cursor: pointer;
+        font-size: small;
+        font-weight: lighter;
+        &:hover {}
+    }
+}
+
+// .loginButton,
+// .logoutButton {
+//   background-color: var(--color-accent);
+//   color: white;
+//   border: none;
+//   padding: 0.5rem 1rem;
+//   border-radius: 6px;
+//   cursor: pointer;
+// }

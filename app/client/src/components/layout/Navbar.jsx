@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import styles from "./styles/Navbar.module.scss";
 import logo from "../../assets/logo.png";
+import Login from '../resource/Login';
+
 
 export default function Navbar() {
     return (
@@ -15,8 +17,12 @@ export default function Navbar() {
             </div>
             <div className={styles.navlinks}>
                 <ul>
+                    <li><Link to="/applications">Third-Parties</Link></li>
                     <li><Link to="/applications">Applications</Link></li>
                 </ul>
+            </div>
+            <div className={styles.login}>
+                <Login />
             </div>
 
         </nav>

@@ -1,33 +1,33 @@
 import { useState } from 'react'
+import { AuthenticatedTemplate, UnauthenticatedTemplate } from "@azure/msal-react";
 
 import Navbar from '../components/layout/Navbar'
 import Footer from '../components/layout/Footer'
 
-
-function Home() {
-  const [count, setCount] = useState(0)
+export default function Home() {
 
   return (
 
     <div className="page-wrapper">
-      <title>JE Dunn - Software Review Manager</title>
+      <title>JE Dunn - Software Review Tool</title>
       <Navbar />
       <div className="main-content">
-        <h1>Vite + React</h1>
-      </div>
+        <div className="card">
+          <AuthenticatedTemplate>
+            {/* Display user details fetched from Microsoft Graph */}
 
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
+            <p>Welcome, authenticated user!</p>
+
+
+          </AuthenticatedTemplate>
+          <UnauthenticatedTemplate>
+            <p>Please sign in.</p>
+          </UnauthenticatedTemplate>
+        </div>
       </div>
       <Footer />
     </div>
 
-  )
-}
 
-export default Home
+  );
+}

@@ -15,12 +15,11 @@ body {
   --color-text-navbar: #fff4f4;
 
   --font-heading: SegoeUI-SemiBold-final, Segoe UI Semibold, SegoeUI-Regular-final, Segoe UI, "Segoe UI Web (West European)", Segoe, -apple-system, BlinkMacSystemFont, Roboto, Helvetica Neue, Tahoma, Helvetica, Arial, sans-serif;
-
-  --font-body: SegoeUI-SemiBold-final, Segoe UI Semibold, SegoeUI-Regular-final, Segoe UI, "Segoe UI Web (West European)", Segoe, -apple-system, BlinkMacSystemFont, Roboto, Helvetica Neue, Tahoma, Helvetica, Arial, sans-serif;
+  --font-body: SegoeUI-Regular-final, Segoe UI, "Segoe UI Web (West European)", Segoe, -apple-system, BlinkMacSystemFont, Roboto, Helvetica Neue, Tahoma, Helvetica, Arial, sans-serif;
 
 
   font-family: var(--font-body);
-  font-weight: 400;
+  /* font-weight: 400; */
   line-height: 1.5;
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
@@ -48,7 +47,7 @@ body {
 a {
   color: var(--color-text);
   text-decoration: none;
-  font-weight: 500;
+  /* font-weight: 500; */
   transition: color 0.2s ease;
 }
 
@@ -63,34 +62,9 @@ h4,
 h5,
 h6 {
   margin: 0.5em 0;
-  font-weight: 600;
   color: var(--color-text);
-  font-family: var(--font-heading), cursive;
+  font-family: var(--font-body);
   
-}
-
-h1 {
-  font-size: clamp(2rem, 8vw, 15vh);
-}
-
-h2 {
-  font-size: clamp(1.75rem, 6vw, 12vh);
-}
-
-h3 {
-  font-size: clamp(1.5rem, 5vw, 10vh);
-}
-
-h4 {
-  font-size: clamp(1.25rem, 4vw, 8vh);
-}
-
-h5 {
-  font-size: clamp(1.1rem, 3.5vw, 6vh);
-}
-
-h6 {
-  font-size: clamp(1rem, 3vw, 4vh);
 }
 
 .full-width-section {
@@ -115,7 +89,6 @@ h6 {
   padding: 0.2rem 2rem;
   background-color: var(--color-primary);
   border-radius: 1.5rem;
-  font-family: 'Amatic SC', 'Segoe UI', system-ui, Avenir, Helvetica, Arial, sans-serif;
   color: var(--color-text);
 }
 
@@ -129,27 +102,27 @@ h6 {
 
 .main-content {
   flex: 1;
-  padding: 0rem 2rem 0rem 2rem;
+  padding: 1rem 1rem 1rem 1rem;
 }
 
 
 
 button {
   border-radius: 8px;
-  border: 1px solid transparent;
+  border: transparent;
   padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
+  /* font-size: 1em;
+  font-weight: 1;
+  font-family: inherit; */
+  background-color: transparent;
   cursor: pointer;
-  transition: border-color 0.25s;
+  transition: color 0.25s;
 }
 button:hover {
-  border-color: #646cff;
+  color: #646cff;
 }
 button:focus,
 button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  outline: 2px auto -webkit-focus-ring-color;
 }
 
