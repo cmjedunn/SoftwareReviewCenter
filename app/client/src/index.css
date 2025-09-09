@@ -7,12 +7,13 @@ body {
 
 :root {
   /* Color */
-  --color-primary: #1c73e6;
+  --color-primary: #004b8d;
   --color-secondary: #144f9c;
   --color-primary-hover: #c5c5c5;
   --color-bg: #383838;
-  --color-bg-card: #242424;
   --color-bg-secondary: #242424;
+  --color-bg-tertiary: #2e2e2e;
+  --color-bg-card: #242424;
   --color-text: #ffffff;
   --color-navtext: #fff4f4;
   background-color: var(--color-bg);
@@ -93,3 +94,4 @@ button {
   cursor: pointer;
   transition: color 0.25s;
 }
+

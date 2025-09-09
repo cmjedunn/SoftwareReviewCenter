@@ -1,52 +1,94 @@
 $sidebar-width: 20em;
 $collapsed-width: 3em;
-$sidebar-bg: #2c3e50;
+$sidebar-bg: var(--color-bg-tertiary);
 $button-bg: var(--color-bg-secondary);
-$text-color: white;
+$text-color: var(--color-navtext);
+
+@keyframes fadeInSlide {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
 
 .sidebar {
-  height: 100vh;
-  background-color: $sidebar-bg;
-  width: $sidebar-width;
-  transition: width .3s ease;
-  overflow-x: hidden;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-
-  &.collapsed {
-    width: $collapsed-width;
-
-    .menu a {
-      display: none;
-      pointer-events: none;
-    }
-  }
-
-  .togglebutton {
-    background-color: $button-bg;
-    border: none;
-    border-radius: 0;
-    color: $text-color;
-    font-size: 1.5rem;
-    padding: 12px;
-    cursor: pointer;
-    width: 100%;
-    text-align: left;
-
-  }
-
-  .menu {
+    height: 100vh;
+    background-color: $sidebar-bg;
+    width: $sidebar-width;
+    transition: width 0.3s ease;
+    overflow-x: hidden;
     display: flex;
     flex-direction: column;
-    padding: 1rem;
+    align-items: stretch;
 
-    a {
-      color: $text-color;
-      text-decoration: none;
-      margin-bottom: 1rem;
-      font-size: 1rem;
-      transition: opacity 0.2s ease;
+    &.collapsed {
+        width: $collapsed-width;
+
+        .menuItem {
+            opacity: 0;
+            transform: translateX(-10px);
+            pointer-events: none;
+        }
+
+        .togglebutton {
+            box-shadow: none;
+        }
     }
-  }
+
+    .togglebutton {
+        background-color: $button-bg;
+        border: none;
+        border-radius: 0%;
+        color: $text-color;
+        font-size: 1.5rem;
+        padding: 12px;
+        cursor: pointer;
+        width: 100%;
+        text-align: left;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+
+    }
+
+    .menu {
+        display: flex;
+        flex-direction: column;
+        padding: 1rem;
+        white-space: nowrap;
+        padding: 0;
+    }
+}
+
+.menuItem {
+    height: 2em;
+    width: 100%;
+    color: $text-color;
+    font-family: inherit;
+    text-decoration: none;
+    margin-bottom: 1rem;
+    font-size: 1rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: background-color 0.2s ease, color 0.2s ease, padding-left 0.2s ease;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    display: flex; // works for a, div, button
+    align-items: center;
+    justify-content: baseline;
+    border-radius: 0%;
+
+    &:hover {
+        background-color: var(--color-navtext);
+        color: var(--color-bg-secondary);
+        padding-left: 1rem;
+    }
+}
+
+.menuLinkAnimated {
+    animation: fadeInSlide 0.3s ease forwards;
+    pointer-events: auto;
 }

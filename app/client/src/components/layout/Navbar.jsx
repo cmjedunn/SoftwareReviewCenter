@@ -15,10 +15,9 @@ export default function Navbar() {
                 <p>Software Review Manager</p>
             </Link>
             <div className={styles.navlinks}>
-                <ul>
-                    <li><Link to="/applications">Third-Parties</Link></li>
+                {/* <ul>
                     <li><Link to="/applications">Applications</Link></li>
-                </ul>
+                </ul> */}
             </div>
             <div className={styles.login}>
                 <Login />

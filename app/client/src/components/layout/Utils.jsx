@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { Link } from "react-router-dom";
+
 import styles from "./styles/Utils.module.scss"
 
 import Navbar from './Navbar'
@@ -9,18 +10,18 @@ import { AuthenticatedTemplate, UnauthenticatedTemplate } from "@azure/msal-reac
 
 export function PageWrapper(props) {
 
-    const [sidebarOpen, setSideBarOpen] = useState(false);
-    const handleViewSidebar = () => {
-        setSideBarOpen(!sidebarOpen);
-    };
+
     return (
         <div className={styles.pageWrapper}>
             <title>JE Dunn - Software Review Tool</title>
             <Navbar />
             <div className={styles.content}>
-                <span>
-                    
-                    <Sidebar isOpen={sidebarOpen} toggleSidebar={handleViewSidebar} />
+                <span> 
+                    <Sidebar>
+                        <Link to="/Page1">Page 1</Link>   
+                        <Link to="/Page2">Page 2</Link>                 
+                        <Link to="/Page3">Page 3</Link>                
+                    </Sidebar>
                 </span>
                 {props.children}
             </div>
