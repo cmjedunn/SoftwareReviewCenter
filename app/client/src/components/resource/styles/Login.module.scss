@@ -1,79 +1,195 @@
 .loginContainer {
     display: flex;
+    flex: 1;
     justify-content: center;
     align-items: center;
     gap: 1rem;
+    height: 100%
 }
 
-.userInfo {
-    
-}
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-1em);
+    }
 
-.userDropdown {
-    position: relative;
-    display: inline-block;
-
-    &:hover .dropdownMenu {
-        display: block;
+    to {
+        opacity: 1;
+        transform: translateY(0rem);
     }
 }
 
-.userTrigger {
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* The dropdown container */
+.wrapper {
     display: flex;
+    justify-content: center;
     align-items: center;
-    vertical-align: middle;
-    cursor: pointer;
-    padding: 0 .2rem;
+    height: 100%;
+    background-color: transparent;
+    // padding-left: .75rem;
 }
 
-.userPhoto {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    margin-left: 8px;
-    display: inline-flex;
-    vertical-align: middle;
+.dropdown {
+    float: left;
+    overflow: hidden;
+    align-items: center;
+    flex: 1;
+    height: 100%;
+    box-sizing: border-box;
+    // padding-right: .75rem;
 
+    //position: relative;
 }
 
-.userName {
-    font-family: var(--font-heading);
+.user {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
+    padding: 0 .75rem 0 .75rem;
+}
+
+/* Dropdown button */
+.dropdown .dropbtn {
+    border: none;
+    outline: none;
     margin: 0;
     padding: 0;
-    line-height: normal;
-
+    border: 0;
+    height: 100%;
+    color: var(--color-navtext);
+    font-weight: 500;
+    font-family: inherit;
 }
 
-.dropdownMenu {
-    display: none;
-    width: 100%;
-    position: absolute;
-    top: 100%;
-    right: 0;
-    padding: 0px;
-    z-index: 100;
-    background-color: var(--color-primary);
+.dropdown:hover .dropbtn {
+    color: var(--color-primary);
+    border-radius: 0%;
+    animation: none;
+}
 
-    button {
+.dropdown:hover {
+    background-color: var(--color-navtext);
+    animation: none;
+   
+}
+
+
+.dropdown:hover .dropbtn,
+.dropdown:hover {
+    animation: fadeIn 0s ease both;
+    transition: none !important;
+}
+
+
+/* Dropdown content (hidden by default) */
+.dropdownContent {
+    display: none;
+    position: absolute;
+    background-color: var(--color-navtext);
+    //box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+    z-index: 1;
+}
+
+/* Links inside the dropdown */
+.dropdownContent a {
+    float: none;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    text-align: left;
+}
+
+/* Show the dropdown menu on hover */
+.dropdown:hover .dropdownContent {
+    display: block;
+    animation: slideDown 0.3s ease forwards;
+    width: 100%;
+
+
+    a {
         background: none;
         border: none;
         padding: 8px;
         width: 100%;
         text-align: left;
-        line-height: .5;
+        line-height: 0.5;
         cursor: pointer;
-        font-size: small;
-        font-weight: lighter;
-        &:hover {}
+        font-size: var(--fs-350);
+        font-weight: 500;
+        color: var(--color-primary);
+        opacity: 0;
+        animation: fadeIn 0.3s ease forwards;
+
+        &:nth-child(1) {
+            animation-delay: 0.075s;
+        }
+
+        &:nth-child(2) {
+            animation-delay: 0.125s;
+        }
+
+        &:nth-child(3) {
+            animation-delay: 0.175s;
+        }
+
+        &:hover {
+            background-color: var(--color-primary);
+            border-radius: 0%;
+            color: var(--color-navtext);
+            // border-bottom: .1em solid var(--color-navtext);
+        }
+
+
     }
+
 }
 
-// .loginButton,
-// .logoutButton {
-//   background-color: var(--color-accent);
-//   color: white;
-//   border: none;
-//   padding: 0.5rem 1rem;
-//   border-radius: 6px;
-//   cursor: pointer;
-// }
+.userPhoto {
+    height: auto;
+    width: auto;
+    max-width: 32px;
+    max-height: 32px;
+    border-radius: 50%;
+    margin-left: 8px;
+    display: inline-flex;
+    vertical-align: middle;
+    z-index: 9999;
+    /* A high value to ensure it's on top */
+}
+
+
+
+
+
+
+
+.loginButton {
+    font-weight: 500;
+}
+
+@media screen and (max-width: 600px) {
+    .userPhoto {
+        height: auto;
+        width: auto;
+        max-width: 16px;
+        max-height: 16px;
+    }
+
+    .dropbtn {
+        p {
+            display: none;
+        }
+    }
+}

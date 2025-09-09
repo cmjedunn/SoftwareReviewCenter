@@ -1,0 +1,52 @@
+$sidebar-width: 20em;
+$collapsed-width: 3em;
+$sidebar-bg: #2c3e50;
+$button-bg: var(--color-bg-secondary);
+$text-color: white;
+
+.sidebar {
+  height: 100vh;
+  background-color: $sidebar-bg;
+  width: $sidebar-width;
+  transition: width .3s ease;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+
+  &.collapsed {
+    width: $collapsed-width;
+
+    .menu a {
+      display: none;
+      pointer-events: none;
+    }
+  }
+
+  .togglebutton {
+    background-color: $button-bg;
+    border: none;
+    border-radius: 0;
+    color: $text-color;
+    font-size: 1.5rem;
+    padding: 12px;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+
+  }
+
+  .menu {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+
+    a {
+      color: $text-color;
+      text-decoration: none;
+      margin-bottom: 1rem;
+      font-size: 1rem;
+      transition: opacity 0.2s ease;
+    }
+  }
+}

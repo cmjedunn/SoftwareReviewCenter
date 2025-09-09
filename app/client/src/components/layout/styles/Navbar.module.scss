@@ -1,55 +1,83 @@
-
 .navbar {
     display: grid;
-    grid-template-columns: auto 1fr auto auto;
-    min-height: 48px;
+    grid-template-columns: repeat(3, minmax(0px, auto));
+    height: min-content;
     align-items: center;
     background-color: var(--color-primary);
-    padding-right: 1.5rem;
+    font-weight: 500;
+    font-size: var(--fs-400);
+    overflow: hidden;
 }
 
 .logo,
-.name,
 .navlinks,
 .login {
-    height: 48px; // or match the tallest element
+    height: 100%;
     display: flex;
     align-items: center;
+    justify-self: end;
+    flex-direction: row;
+    flex: 1;
+
 }
 
 .logo {
-    max-height: 100%;
-    transition: filter 300ms;
     justify-self: start;
-}
 
-.name {
-    font-weight: 600;
-    font-size: 16px;
-    justify-self: start;
-    /* centers the name in the middle column */
+    img {
+        max-width: 20vw;
+        object-fit: contain;
+        max-width: 20em;
+    }
+
+    p {
+        white-space: nowrap;
+        font-weight: 600;
+    }
+
 }
 
 .navlinks {
-    gap: 3rem;
-    font-weight: 200;
-    font-size: 16px;
+    gap: 3em;
     padding: 0 3rem;
-    justify-self: end;
     margin: 0;
+    border: 0;
+
 
     ul {
+        margin: 0;
         list-style: none;
-        display: flex;
-        flex-direction: row;
-        font-family: var(--font-heading);
-        gap: 1.5rem;
+        gap: 1.5em;
+
+        li {
+            white-space: nowrap;
+        }
+    }
+
+}
+
+.login {}
+
+a {
+    color: var(--color-navtext);
+    text-decoration: none;
+}
+
+@media screen and (max-width: 600px) {
+    .navbar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0px, auto));
+    height: min-content;
+    align-items: center;
+    background-color: var(--color-primary);
+    font-weight: 500;
+    font-size: var(--fs-400);
+}
+    .navlinks{
+        display: none;
     }
 }
 
-.login {
-    justify-self: end;
-}
 
 
 

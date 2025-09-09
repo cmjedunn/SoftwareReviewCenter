@@ -89,28 +89,33 @@ export default function Login() {
     return (
         <div className={styles.loginContainer}>
             {!isLoggedIn && (
-                <button className={styles.loginButton} onClick={handleLogin}>
+                <a className={styles.loginButton} onClick={handleLogin}>
                     Sign in
-                </button>
+                </a>
             )}
             {isLoggedIn && (
-                <div className={styles.userDropdown}>
-                    <div className={styles.userTrigger}>
-                        <span className={styles.userName}>{userDisplayName}<div className={styles.dropdownMenu}>
-                            <button onClick={null}>Profile</button>
-                            <button onClick={null}>Settings</button>
-                            <button onClick={handleLogout}>Logout</button>
-                        </div></span>
-                        {userPhotoUrl && (
-                            <img
-                                src={userPhotoUrl}
-                                alt="Profile"
-                                className={styles.userPhoto}
-                            />
-                        )}
+                <div className={styles.wrapper}>
+                    <div className={styles.dropdown}>
+                        <button className={styles.dropbtn}>
+                            <div className={styles.user}>
+                                <p>{userDisplayName}</p>
+                                {userPhotoUrl && (
+                                    <img
+                                        src={userPhotoUrl}
+                                        alt="Profile"
+                                        className={styles.userPhoto}
+                                    />
+                                )}
+                            </div>
+                        </button>
+                        <div className={styles.dropdownContent}>
+                            <a href="https://myprofile.microsoft.com/">Profile</a>
+                            <a href="https://myapps.microsoft.com/">Apps</a>
+                            <a onClick={handleLogout}>Logout</a>
+                        </div>
+
 
                     </div>
-
                 </div>
             )}
         </div>
