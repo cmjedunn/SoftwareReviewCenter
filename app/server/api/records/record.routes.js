@@ -1,4 +1,3 @@
-// routes/record.routes.js
 import { Router } from 'express';
 import { deleteLinkedRecords } from './record.controller.js';
 
