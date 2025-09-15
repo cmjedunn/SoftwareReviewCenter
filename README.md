@@ -1,0 +1,1 @@
+docker-compose build --no-cache jed_srcenter && docker tag cmjedunn/jed_srcenter:latest cmjedunn/jed_software_review_center:alpha1.0.0 && docker push cmjedunn/jed_software_review_center:alpha1.0.0

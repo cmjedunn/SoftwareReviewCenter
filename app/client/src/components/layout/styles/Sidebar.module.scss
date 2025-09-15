@@ -1,4 +1,4 @@
-$sidebar-width: 20em;
+$sidebar-width: 16em;
 $collapsed-width: 3em;
 $sidebar-bg: var(--color-bg-tertiary);
 $button-bg: var(--color-bg-secondary);
@@ -18,7 +18,7 @@ $text-color: var(--color-navtext);
 
 .sidebar {
     height: 100vh;
-    background-color: $sidebar-bg;
+    background-color: #e4e4e6;
     width: $sidebar-width;
     transition: width 0.3s ease;
     overflow-x: hidden;
@@ -41,17 +41,25 @@ $text-color: var(--color-navtext);
     }
 
     .togglebutton {
-        background-color: $button-bg;
+        background-color: #e4e4e6;
         border: none;
         border-radius: 0%;
-        color: $text-color;
+        color: #6e6e72;
         font-size: 1.5rem;
         padding: 12px;
         cursor: pointer;
         width: 100%;
         text-align: left;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.063);
 
+    }
+
+    .togglebutton:hover {
+        color: #006bca;
+    }
+
+    .togglebutton:active {
+        color: #add6fb;
     }
 
     .menu {
@@ -66,15 +74,15 @@ $text-color: var(--color-navtext);
 .menuItem {
     height: 2em;
     width: 100%;
-    color: $text-color;
+    color: #6e6e72;
     font-family: inherit;
     text-decoration: none;
-    margin-bottom: 1rem;
+    //margin-bottom: 1rem;
     font-size: 1rem;
     opacity: 0;
     pointer-events: none;
     transition: background-color 0.2s ease, color 0.2s ease, padding-left 0.2s ease;
-    padding: 0.25rem 0.5rem;
+    padding: 0.5rem 1rem;
     border-radius: 4px;
     display: flex; // works for a, div, button
     align-items: center;
@@ -82,9 +90,13 @@ $text-color: var(--color-navtext);
     border-radius: 0%;
 
     &:hover {
-        background-color: var(--color-navtext);
-        color: var(--color-bg-secondary);
-        padding-left: 1rem;
+        background-color: #fafafa;
+        color: #006bca;
+        padding-left: 1.5rem;
+    }
+
+    &:active {
+        color: #add6fb;
     }
 }
 

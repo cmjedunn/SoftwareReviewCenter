@@ -71,6 +71,7 @@
     color: var(--color-navtext);
     font-weight: 500;
     font-family: inherit;
+    background-color: transparent
 }
 
 .dropdown:hover .dropbtn {
@@ -80,9 +81,12 @@
 }
 
 .dropdown:hover {
-    background-color: var(--color-navtext);
+    background-color: #e4e4e6;
     animation: none;
-   
+
+    .dropbtn, .dropdownContent{
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.063);
+    }
 }
 
 
@@ -90,6 +94,7 @@
 .dropdown:hover {
     animation: fadeIn 0s ease both;
     transition: none !important;
+
 }
 
 
@@ -97,7 +102,7 @@
 .dropdownContent {
     display: none;
     position: absolute;
-    background-color: var(--color-navtext);
+    background-color: #e4e4e6;
     //box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
     z-index: 1;
 }

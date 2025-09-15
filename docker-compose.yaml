@@ -1,19 +1,26 @@
 services:
-  app:
+  jed_srcenter:
     platform: linux/amd64
     build:
       context: .
       dockerfile: Dockerfile
-    image: cmjedunn/logicgate:webapp
+    image: cmjedunn/jed_srcenter:latest
 
     environment:
       DB_URL: #mongo db url here
       PORT: 3000
       NODE_ENV: production
-      LOGICGATE_API_TOKEN: SlhwMUVWVWo6ZUljT3hVSVI4em1UNFMwdjU5d09DY1l3RHc5emJiY2Q
+      LOGICGATE_CLIENT_KEY: YXRoZW5ldW06aGppcU10M0I6RVhURVJOQUw=
+      LOGICGATE_CLIENT_SECRET: oeIIKNzEQBH4BUadzWlbKUUj9Ioa9qk1
+      LOGICGATE_ENV: atheneum
     ports:
       - "3000:3000"
     restart: unless-stopped
+    volumes:
+      - token-cache:/app/token-cache
+      - ./trusted_certs.crt:/usr/local/share/ca-certificates/trusted_certs.crt
 
 volumes:
   mongo-data:
+  token-cache:
+

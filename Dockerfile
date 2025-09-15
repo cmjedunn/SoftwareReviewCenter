@@ -1,16 +1,20 @@
-FROM node:18-alpine
+FROM node:20
+
+COPY ./trusted_certs.crt /usr/local/share/ca-certificates/trusted_certs.crt
+ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+
+RUN apt-get update && apt-get install -y ca-certificates
+
+RUN update-ca-certificates
+
 WORKDIR /app/server
 
-# Install Server dependencies.
 COPY app/server/package*.json ./
-RUN npm ci --production
+RUN npm install --omit=dev
 
-# Coppy Server code.
 COPY app/server/ ./
 
-# Coppy in front end build.
-COPY --from=frontend-builder /app/client/dist ./public/
+RUN [ -d "./public" ] || (echo "Missing frontend build. Run 'npm run build' in app/client first." && exit 1)
 
-# Expose and run.
 EXPOSE 3000
 CMD ["node", "index.js"]

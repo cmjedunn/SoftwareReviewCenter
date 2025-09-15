@@ -1,8 +1,9 @@
 html,
 body {
-  height: 100%;
   margin: 0;
   padding: 0;
+  min-height: 100vh;
+  width: 100vw;
 }
 
 :root {
@@ -10,11 +11,12 @@ body {
   --color-primary: #004b8d;
   --color-secondary: #144f9c;
   --color-primary-hover: #c5c5c5;
-  --color-bg: #383838;
+  /* --color-bg: #383838; */
+  --color-bg: #f2f2f3;
   --color-bg-secondary: #242424;
   --color-bg-tertiary: #2e2e2e;
   --color-bg-card: #242424;
-  --color-text: #ffffff;
+  /* --color-text: #ffffff; */
   --color-navtext: #fff4f4;
   background-color: var(--color-bg);
 
@@ -48,13 +50,6 @@ body {
   }
 }
 
-body {
-  margin: 0;
-  padding: 0;
-  min-height: 100vh;
-  width: 100vw;
-}
-
 /* a {
   transition: color 0.2s ease;
 }
@@ -65,16 +60,9 @@ a:hover {
 
 
 
-.card {
-  background: var(--color-bg-card);
-  border-radius: 1rem;
-  padding: 1.5rem;
-  box-shadow: 0 8px 16px rgba(85, 85, 85, 0.1);
-  margin-bottom: 1.5rem;
-  flex: 1;
-}
 
-.container {
+
+/* .container {
   display: flex;
   align-items: baseline;
   max-width: 900px;
@@ -82,16 +70,16 @@ a:hover {
   padding: 0.2rem 2rem;
   background-color: var(--color-primary);
   border-radius: 1.5rem;
-}
+} */
 
 
 
-button {
+/* button {
   border-radius: 8px;
   border: transparent;
   padding: 0.6em 1.2em;
   background-color: transparent;
   cursor: pointer;
   transition: color 0.25s;
-}
+} */
 

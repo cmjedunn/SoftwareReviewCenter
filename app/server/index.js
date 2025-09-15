@@ -6,8 +6,11 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from "cors";
 import dotenv from 'dotenv';
+import { initTokenManager } from './auth/tokenManager.js';
 
 dotenv.config();
+
+initTokenManager();
 
 //Middleware
 const app = express();

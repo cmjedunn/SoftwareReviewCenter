@@ -1,12 +1,72 @@
-import dotenv from 'dotenv';
-dotenv.config();
+import { getLogicGateAccessToken } from '../../auth/tokenManager.js';
 
-const BASE_URL = 'https://atheneum.logicgate.com';
-const TOKEN = `Bearer SlhwMUVWVWo6ZUljT3hVSVI4em1UNFMwdjU5d09DY1l3RHc5emJiY2Q`//`Bearer ${process.env.LOGICGATE_API_TOKEN}`;
+const ENV = process.env.LOGICGATE_ENV;
+const TOKEN = getLogicGateAccessToken();import dotenv from 'dotenv';
+const BASE_URL = `https://${ENV}.logicgate.com`;
+
+export async function getRectords(req, res) {
+  const query = new URLSearchParams();
+  console.log(req.body['workflow-id']);
+
+  if (req.body['application-id'])
+    query.append('application-id', req.body['application-id']);
+
+  if (req.body['workflow-id'])
+    query.append('workflow-id', req.body['workflow-id']);
+
+  if (req.body['step-id'])
+    query.append('step-id', req.body['step-id']);
+
+  if (req.body['updated-min'])
+    query.append('updated-min', req.body['updated-min']);
+
+  if (req.body.page)
+    query.append('page', req.body.page);
+
+  if (req.body.size)
+    query.append('size', req.body.size);
+
+  try {
+    const response = await fetch(
+      `${BASE_URL}/api/v2/records?${query}`,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: TOKEN,
+          Accept: 'application/json',
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      throw new Error(`Failed to fetch records: ${response.status} ${errorBody}`);
+    }
+
+    const data = await response.json();
+    const records = data.content || [];
+
+    const results = [];
+
+    for (const record of records) {
+      try {
+        results.push({ id: record.id, name: record.name });
+      } catch (err) {
+        results.push({ id: record.id, name: record.name, message: err.message });
+      }
+    }
+
+    return res.json(results);
+
+  } catch (error) {
+
+    console.error('Error getting records:', error);
+
+    return res.status(500).json({ error: error.message });
+  }
+}
 
 export async function deleteLinkedRecords(req, res) {
-  console.log('🟢 deleteLinkedRecords hit');
-  console.log('🟡 req.body:', req.body);
   const { parentId, linkedWorkflowId } = req.body;
 
   if (!parentId || !linkedWorkflowId) {
@@ -28,7 +88,8 @@ export async function deleteLinkedRecords(req, res) {
         headers: {
           Authorization: TOKEN,
           Accept: 'application/json',
-        },      }
+        },
+      }
     );
 
     if (!response.ok) {
@@ -64,7 +125,7 @@ export async function deleteLinkedRecords(req, res) {
 
     return res.json({ successCount: results.filter(r => r.status === 'deleted').length, results });
   } catch (error) {
-    console.error('❌ Error deleting records:', error);
+    console.error('Error deleting records:', error);
     return res.status(500).json({ error: error.message });
   }
 }

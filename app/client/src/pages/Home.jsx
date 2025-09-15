@@ -1,5 +1,5 @@
-//import styles from './styles/Home.module.scss'
 import { PageWrapper, MainContent, AuthContent} from '../components/layout/Utils'
+import Card from '../components/layout/Card';
 
 export default function Home() {
 
@@ -8,9 +8,9 @@ export default function Home() {
     <PageWrapper>
       
       <AuthContent>
-        <div className="card">
+        <Card>
           <p>Welcome</p>
-        </div>
+        </Card>
       </AuthContent>
 
     </PageWrapper>
