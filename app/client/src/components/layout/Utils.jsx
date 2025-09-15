@@ -9,8 +9,6 @@ import Footer from './Footer'
 import { AuthenticatedTemplate, UnauthenticatedTemplate } from "@azure/msal-react";
 
 export function PageWrapper(props) {
-
-
     return (
         <div className={styles.pageWrapper}>
             <title>JE Dunn - Software Review Tool</title>
@@ -18,9 +16,8 @@ export function PageWrapper(props) {
             <div className={styles.content}>
                 <span> 
                     <Sidebar>
-                        <Link to="/Page1">Page 1</Link>   
-                        <Link to="/Page2">Page 2</Link>                 
-                        <Link to="/Page3">Page 3</Link>                
+                        <Link to="/applications">Applications</Link>   
+                        <Link to="/thirdparties">Third Parties</Link>                 
                     </Sidebar>
                 </span>
                 {props.children}

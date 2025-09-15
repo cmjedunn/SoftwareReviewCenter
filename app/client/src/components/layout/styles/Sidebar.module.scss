@@ -104,3 +104,38 @@ $text-color: var(--color-navtext);
     animation: fadeInSlide 0.3s ease forwards;
     pointer-events: auto;
 }
+
+
+// Mobile responsive design
+@media screen and (max-width: 768px) {
+    .sidebar {
+        width: 12em;
+        min-width: 12em;
+        max-width: 12em;
+        
+        &.collapsed {
+            width: $collapsed-width;
+            min-width: $collapsed-width;
+            max-width: $collapsed-width;
+        }
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .sidebar {
+        position: fixed;
+        top: 60px; // Account for navbar
+        left: 0;
+        z-index: 1000;
+        height: calc(100vh - 60px);
+        width: 100%;
+        min-width: 100%;
+        max-width: 100%;
+        
+        &.collapsed {
+            width: $collapsed-width;
+            min-width: $collapsed-width;
+            max-width: $collapsed-width;
+        }
+    }
+}

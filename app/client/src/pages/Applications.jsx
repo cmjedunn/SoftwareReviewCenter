@@ -1,27 +1,15 @@
-import { AuthenticatedTemplate, UnauthenticatedTemplate } from "@azure/msal-react";
-import styles from './styles/Applications.module.scss'
-import Navbar from '../components/layout/Navbar'
-import Footer from '../components/layout/Footer'
+import { PageWrapper, AuthContent } from '../components/layout/Utils';
 
 export default function Applications() {
-
   return (
-    
-    <div className="page-wrapper">
-      <Navbar />
-          <AuthenticatedTemplate>
-            {/* Display user details fetched from Microsoft Graph */}
-
-            <p>Welcome, authenticated user!</p>
-
-
-          </AuthenticatedTemplate>
-          <UnauthenticatedTemplate>
-            <p>Please sign in.</p>
-          </UnauthenticatedTemplate>
-      <Footer />
-    </div>
-
-
+    <PageWrapper>
+      <AuthContent>
+        <div className="card">
+          <h2>Applications</h2>
+          <p>Manage your software applications and reviews here.</p>
+          {/* Add your applications content here */}
+        </div>
+      </AuthContent>
+    </PageWrapper>
   );
 }
