@@ -1,8 +1,8 @@
 $sidebar-width: 16em;
 $collapsed-width: 3em;
-$sidebar-bg: var(--color-bg-tertiary);
-$button-bg: var(--color-bg-secondary);
-$text-color: var(--color-navtext);
+$sidebar-bg: #e4e4e6;
+$button-bg: #e4e4e6;
+$text-color: #6e6e72;
 
 @keyframes fadeInSlide {
     from {
@@ -16,15 +16,28 @@ $text-color: var(--color-navtext);
     }
 }
 
+@keyframes slideDownMobile {
+    from {
+        opacity: 0;
+        transform: translateY(-100%);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 .sidebar {
     height: 100vh;
-    background-color: #e4e4e6;
+    background-color: $sidebar-bg;
     width: $sidebar-width;
     transition: width 0.3s ease;
     overflow-x: hidden;
     display: flex;
     flex-direction: column;
     align-items: stretch;
+    position: relative;
 
     &.collapsed {
         width: $collapsed-width;
@@ -41,53 +54,54 @@ $text-color: var(--color-navtext);
     }
 
     .togglebutton {
-        background-color: #e4e4e6;
+        background-color: $button-bg;
         border: none;
         border-radius: 0%;
-        color: #6e6e72;
-        font-size: 1.5rem;
-        padding: 12px;
+        color: $text-color;
+        font-size: var(--fs-600);
+        padding: 0;
         cursor: pointer;
         width: 100%;
-        text-align: left;
+        height: 3rem;  // Fixed height in rem to match collapsed width
+        display: flex;
+        align-items: center;
+        justify-content: center;
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.063);
 
-    }
+        &:hover {
+            color: #006bca;
+        }
 
-    .togglebutton:hover {
-        color: #006bca;
-    }
-
-    .togglebutton:active {
-        color: #add6fb;
+        &:active {
+            color: #add6fb;
+        }
     }
 
     .menu {
         display: flex;
         flex-direction: column;
-        padding: 1rem;
-        white-space: nowrap;
         padding: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        flex: 1;
     }
 }
 
 .menuItem {
-    height: 2em;
     width: 100%;
-    color: #6e6e72;
+    color: $text-color;
     font-family: inherit;
     text-decoration: none;
-    //margin-bottom: 1rem;
-    font-size: 1rem;
+    font-size: var(--fs-400);
     opacity: 0;
     pointer-events: none;
     transition: background-color 0.2s ease, color 0.2s ease, padding-left 0.2s ease;
-    padding: 0.5rem 1rem;
-    border-radius: 4px;
-    display: flex; // works for a, div, button
+    padding: 1rem 1rem;
+    display: flex;
     align-items: center;
-    justify-content: baseline;
+    justify-content: flex-start;
     border-radius: 0%;
+    min-height: 2.5em;
 
     &:hover {
         background-color: #fafafa;
@@ -105,37 +119,96 @@ $text-color: var(--color-navtext);
     pointer-events: auto;
 }
 
-
-// Mobile responsive design
-@media screen and (max-width: 768px) {
+// Mobile - rotate sidebar 90 degrees to horizontal
+@media screen and (max-width: 600px) {
     .sidebar {
-        width: 12em;
-        min-width: 12em;
-        max-width: 12em;
+        // Let the container be only as tall as its content (the button)
+        width: 100vw;
+        height: auto; // Remove fixed height - let button determine height
+        min-height: auto;
+        max-height: none;
+        position: relative;
+        transition: none;
+        overflow: visible;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: row;
+        align-items: stretch;
+        background-color: $sidebar-bg;
         
+        // In both collapsed and expanded states, container height = button height
         &.collapsed {
-            width: $collapsed-width;
-            min-width: $collapsed-width;
-            max-width: $collapsed-width;
+            width: 100vw; // Ensure full width in collapsed state
+            
+            .menu {
+                display: none;
+            }
+        }
+
+        // Add drop shadow when expanded
+        &:not(.collapsed) {
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            z-index: 1001;
+        }
+
+        .togglebutton {
+            // Square button on mobile with proper size
+            width: 3rem;  // Using rem to avoid font-size scaling
+            height: 3rem;
+            aspect-ratio: 1 / 1;  // Ensures it stays square
+            padding: 0;
+            margin: 0;
+            flex-shrink: 0;
+            box-shadow: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .menu {
+            // Dropdown positioned below the container (which matches button height)
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            width: 100vw;
+            background-color: $sidebar-bg;
+            z-index: 1000;
+            flex-direction: column;
+            padding: 0;
+            margin: 0;
+            overflow: visible;
+        }
+
+        &:not(.collapsed) .menu {
+            display: flex;
+            animation: slideDownMobile 0.3s ease forwards;
+        }
+
+        .menuItem {
+            width: 100%;
+            opacity: 1;
+            pointer-events: auto;
+            margin: 0;
+        }
+
+        .menuLinkAnimated {
+            animation: none;
         }
     }
 }
 
+// Extra small screens
 @media screen and (max-width: 480px) {
     .sidebar {
-        position: fixed;
-        top: 60px; // Account for navbar
-        left: 0;
-        z-index: 1000;
-        height: calc(100vh - 60px);
-        width: 100%;
-        min-width: 100%;
-        max-width: 100%;
-        
-        &.collapsed {
-            width: $collapsed-width;
-            min-width: $collapsed-width;
-            max-width: $collapsed-width;
+        .menuItem {
+            padding: 0.875rem 1rem;
+            font-size: var(--fs-350);
+
+            &:hover {
+                padding-left: 1.375rem;
+            }
         }
     }
 }

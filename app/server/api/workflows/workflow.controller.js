@@ -1,9 +1,7 @@
 import { getLogicGateAccessToken } from '../../auth/tokenManager.js';
 
 const ENV = process.env.LOGICGATE_ENV;
-const TOKEN = getLogicGateAccessToken();import dotenv from 'dotenv';
 const BASE_URL = `https://${ENV}.logicgate.com`;
-
 
 export async function getWorkflows(req, res) {
   const query = new URLSearchParams();
@@ -21,12 +19,14 @@ export async function getWorkflows(req, res) {
     query.append('size', req.body.size);
 
   try {
+    const token = await getLogicGateAccessToken();
+        
     const response = await fetch(
       `${BASE_URL}/api/v2/workflows?${query}`,
       {
         method: 'GET',
         headers: {
-          Authorization: TOKEN,
+          Authorization: `Bearer ${token}`,
           Accept: 'application/json',
         },
       }
@@ -34,6 +34,7 @@ export async function getWorkflows(req, res) {
 
     if (!response.ok) {
       const errorBody = await response.text();
+      console.error(`Workflows API Error - Status: ${response.status}, Body: ${errorBody}`);
       throw new Error(`Failed to fetch workflows: ${response.status} ${errorBody}`);
     }
 
@@ -46,6 +47,7 @@ export async function getWorkflows(req, res) {
       try {
         results.push({ id: workflow.id, name: workflow.name });
       } catch (err) {
+        console.error(`Error processing workflow ${workflow.id}:`, err);
         results.push({ id: workflow.id, name: workflow.name, message: err.message });
       }
     }
@@ -53,9 +55,12 @@ export async function getWorkflows(req, res) {
     return res.json(results);
 
   } catch (error) {
-
     console.error('Error getting workflows:', error);
 
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ 
+      error: error.message,
+      timestamp: new Date().toISOString(),
+      endpoint: `${BASE_URL}/api/v2/workflows?${query.toString()}`
+    });
   }
 }

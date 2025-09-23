@@ -1,10 +1,18 @@
 import { Router } from 'express';
-import { deleteLinkedRecords, getRectords } from './record.controller.js';
+import { deleteLinkedRecords, deleteRecord, getLinkedRecords, getRecords, restoreRecord} from './record.controller.js';
 
 const router = Router();
 
 router.route('/')
-    .get(getRectords)
-    .post(deleteLinkedRecords);
+    .get(getRecords)
+    .delete(deleteRecord);
+    //.post();
+
+router.route('/restore')
+    .post(restoreRecord);
+    
+router.route('/linked')
+    .get(getLinkedRecords)
+    .delete(deleteLinkedRecords);
 
 export default router;
