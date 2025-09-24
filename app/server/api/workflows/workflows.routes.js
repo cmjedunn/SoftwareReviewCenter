@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getWorkflows } from './workflow.controller.js';
+import { getWorkflows } from './workflows.controller.js';
 
 const router = Router();
 

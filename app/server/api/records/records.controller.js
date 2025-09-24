@@ -1,24 +1,18 @@
-import { getLogicGateAccessToken } from '../../auth/tokenManager.js';
-import { getWorkflows } from '../workflows/workflow.controller.js';
+import { getToken } from '../utils/getToken.js';
+import { logRequest } from '../utils/logRequest.js';
+import { getWorkflows } from '../workflows/workflows.controller.js';
+import { createErrorResponse } from '../utils/createErrorResponse.js';
+import { createSuccessResponse } from '../utils/createSuccessResponse.js';
 import fs from 'fs';
 import path from 'path';
 
 const ENV = process.env.LOGICGATE_ENV;
 const BASE_URL = `https://${ENV}.logicgate.com`;
+const LOGFILES_ENABLED = process.env.LOGFILES_ENABLED;
 
 /**
  * HELPER FUNCTIONS
  */
-
-async function getToken(res) {
-  try {
-    return await getLogicGateAccessToken();
-  } catch (error) {
-    console.error('❌ Failed to get authentication token:', error.message);
-    res.status(500).json({ error: 'Authentication failed' });
-    return null;
-  }
-}
 
 async function getFullRecord(recordId, token) {
   try {
@@ -64,61 +58,34 @@ async function deleteRecordById(recordId, token) {
 }
 
 async function logRecordToFile(method, recordId, recordData, suffix = '') {
-  try {
-    const logsDir = './logs';
-    if (!fs.existsSync(logsDir)) {
-      fs.mkdirSync(logsDir, { recursive: true });
+  if (LOGFILES_ENABLED) {
+    try {
+      const logsDir = './logs';
+      if (!fs.existsSync(logsDir)) {
+        fs.mkdirSync(logsDir, { recursive: true });
+      }
+
+      const now = new Date();
+      const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+      const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '-'); // HH-MM-SS
+      const suffixStr = suffix ? `_${suffix}` : '';
+
+      const filename = `${method}_${recordId}_${dateStr}_${timeStr}${suffixStr}.json`;
+      const filepath = path.join(logsDir, filename);
+
+      const logData = {
+        timestamp: now.toISOString(),
+        method: method,
+        recordId: recordId,
+        data: recordData
+      };
+
+      fs.writeFileSync(filepath, JSON.stringify(logData, null, 2));
+      console.log(`📝 Logged record data to: ${filename}`);
+    } catch (error) {
+      console.error(`❌ Failed to log record ${recordId} to file:`, error.message);
     }
-
-    const now = new Date();
-    const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
-    const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '-'); // HH-MM-SS
-    const suffixStr = suffix ? `_${suffix}` : '';
-    
-    const filename = `${method}_${recordId}_${dateStr}_${timeStr}${suffixStr}.json`;
-    const filepath = path.join(logsDir, filename);
-    
-    const logData = {
-      timestamp: now.toISOString(),
-      method: method,
-      recordId: recordId,
-      data: recordData
-    };
-
-    fs.writeFileSync(filepath, JSON.stringify(logData, null, 2));
-    console.log(`📝 Logged record data to: ${filename}`);
-  } catch (error) {
-    console.error(`❌ Failed to log record ${recordId} to file:`, error.message);
   }
-}
-
-function logRequest(req) {
-  console.log(`🚀 ${req.method} ${req.url} - Started`);
-  console.log(`📋 Request body: ${JSON.stringify(req.body, null, 2)}`);
-}
-
-function createErrorResponse(req, error, status = 500) {
-  return {
-    req: {
-      method: req.method,
-      url: req.url,
-      body: req.body,
-      timestamp: new Date().toISOString()
-    },
-    error: error
-  };
-}
-
-function createSuccessResponse(req, data) {
-  return {
-    req: {
-      method: req.method,
-      url: req.url,
-      body: req.body,
-      timestamp: new Date().toISOString()
-    },
-    ...data
-  };
 }
 
 async function getRecordsByWorkflow(id, workflowId, token) {
@@ -142,7 +109,7 @@ async function getRecordsByWorkflow(id, workflowId, token) {
   if (!response.ok) {
     throw new Error(`Failed to fetch linked records: ${response.status}`);
   }
-  
+
   const data = await response.json();
   return data.content || [];
 }
@@ -153,7 +120,7 @@ async function getRecordsByWorkflow(id, workflowId, token) {
 
 export async function getRecords(req, res) {
   logRequest(req);
-  
+
   let token = await getToken(res);
   if (!token) return;
 
@@ -170,7 +137,7 @@ export async function getRecords(req, res) {
     query.append('page', req.body.page);
   if (req.body.size)
     query.append('size', req.body.size);
-  
+
   const requestUrl = `${BASE_URL}/api/v2/records/${req.body.id ? `${req.body.id}` : `?${query}`}`;
   console.log(`🔍 Fetching records from: ${requestUrl}`);
 
@@ -200,7 +167,7 @@ export async function getRecords(req, res) {
 
 export async function getLinkedRecords(req, res) {
   logRequest(req);
-  
+
   const { id, linkedWorkflowId } = req.body;
 
   let token = await getToken(res);
@@ -208,7 +175,7 @@ export async function getLinkedRecords(req, res) {
 
   try {
     console.log(`🔍 Fetching parent record: ${id}`);
-    
+
     // Get full parent record details
     const parentRecord = await getFullRecord(id, token);
     if (!parentRecord) {
@@ -223,7 +190,7 @@ export async function getLinkedRecords(req, res) {
 
     if (!linkedWorkflowId) {
       console.log(`🔍 Fetching linked records for all workflows`);
-      
+
       // Get all workflows
       const mockReq = { body: { size: 1000 } };
       let workflows;
@@ -240,16 +207,16 @@ export async function getLinkedRecords(req, res) {
           record: record
         }));
       }
-      
+
       console.log(`✅ Retrieved linked records for ${workflows.length} workflows`);
     } else {
       console.log(`🔍 Fetching linked records for workflow: ${linkedWorkflowId}`);
-      
+
       const records = await getRecordsByWorkflow(id, linkedWorkflowId, token);
       workflowsObject[linkedWorkflowId] = records.map(record => ({
         record: record
       }));
-      
+
       console.log(`✅ Retrieved ${records.length} linked records for workflow ${linkedWorkflowId}`);
     }
 
@@ -262,9 +229,9 @@ export async function getLinkedRecords(req, res) {
 
     const totalLinkedRecords = Object.values(workflowsObject).reduce((sum, records) => sum + records.length, 0);
     console.log(`✅ Completed - Found ${totalLinkedRecords} linked records across ${Object.keys(workflowsObject).length} workflow(s)`);
-    
+
     return res.json(response);
-    
+
   } catch (error) {
     console.error(`❌ Error getting linked records for ${id}:`, error.message);
     return res.status(500).json(createErrorResponse(req, error.message));
@@ -273,14 +240,14 @@ export async function getLinkedRecords(req, res) {
 
 export async function restoreRecord(req, res) {
   logRequest(req);
-  
+
   console.log(`⚠️  Restore functionality not yet implemented`);
   return res.status(501).json(createErrorResponse(req, 'Not implemented yet', 501));
 }
 
 export async function deleteLinkedRecords(req, res) {
   logRequest(req);
-  
+
   const { id, linkedWorkflowId } = req.body;
 
   if (!id || !linkedWorkflowId) {
@@ -293,7 +260,7 @@ export async function deleteLinkedRecords(req, res) {
 
   try {
     console.log(`🔍 Fetching linked records for deletion - Record: ${id}, Workflow: ${linkedWorkflowId}`);
-    
+
     const records = await getRecordsByWorkflow(id, linkedWorkflowId, token);
     console.log(`📊 Found ${records.length} linked records to delete`);
 
@@ -301,12 +268,12 @@ export async function deleteLinkedRecords(req, res) {
 
     for (const record of records) {
       console.log(`🗑️  Deleting linked record: ${record.id}`);
-      
+
       // Log record before deletion
       await logRecordToFile('DELETE', record.id, record, 'LINKED');
-      
+
       const deleteResult = await deleteRecordById(record.id, token);
-      
+
       if (deleteResult.success) {
         console.log(`✅ Successfully deleted linked record: ${record.id}`);
         results.push({ id: record.id, status: 'deleted' });
@@ -314,7 +281,7 @@ export async function deleteLinkedRecords(req, res) {
         console.log(`❌ Failed to delete linked record ${record.id}: ${deleteResult.error}`);
         results.push({ id: record.id, status: 'failed', message: deleteResult.error });
       }
-      
+
       // Add delay to respect rate limits
       await new Promise(resolve => setTimeout(resolve, 120));
     }
@@ -322,11 +289,11 @@ export async function deleteLinkedRecords(req, res) {
     const successCount = results.filter(r => r.status === 'deleted').length;
     console.log(`✅ Deletion complete - Successfully deleted ${successCount}/${records.length} linked records`);
 
-    return res.json({ 
+    return res.json({
       successCount,
-      results 
+      results
     });
-    
+
   } catch (error) {
     console.error(`❌ Error deleting linked records for ${id}:`, error.message);
     return res.status(500).json(createErrorResponse(req, error.message));
@@ -335,7 +302,7 @@ export async function deleteLinkedRecords(req, res) {
 
 export async function deleteRecord(req, res) {
   logRequest(req);
-  
+
   const { id, workflowIds = [] } = req.body;
 
   if (!id) {
@@ -351,7 +318,7 @@ export async function deleteRecord(req, res) {
 
   const processRecord = async (recordId) => {
     console.log(`🔄 Processing record: ${recordId}`);
-    
+
     const recordResult = {
       status: '',
       record: null,
@@ -367,7 +334,7 @@ export async function deleteRecord(req, res) {
         recordResult.record = { id: recordId, error: 'Record not found' };
         return recordResult;
       }
-      
+
       recordResult.record = parentRecord;
 
       // Initialize workflow objects for all requested workflows
@@ -395,13 +362,14 @@ export async function deleteRecord(req, res) {
         };
 
         await getLinkedRecords(internalReq, internalRes);
+        
 
         // Extract available workflows from response
         const availableWorkflows = Object.keys(linkedRecordsResponse.linkedRecords.workflow);
         console.log(`📋 Available workflows for record ${recordId}: ${availableWorkflows.join(', ')}`);
 
         // Validate all requested workflow IDs exist
-        const invalidWorkflows = workflowIds.filter(workflowId => 
+        const invalidWorkflows = workflowIds.filter(workflowId =>
           !availableWorkflows.includes(workflowId)
         );
 
@@ -432,10 +400,10 @@ export async function deleteRecord(req, res) {
           for (const linkedRecordItem of linkedRecords) {
             const linkedRecord = linkedRecordItem.record;
             console.log(`🗑️  Deleting linked record: ${linkedRecord.id} from workflow ${workflowId}`);
-            
+
             // Log record before deletion
             await logRecordToFile('DELETE', linkedRecord.id, linkedRecord, `LINKED_${workflowId}`);
-            
+
             const deleteResult = {
               status: '',
               record: linkedRecord
@@ -443,9 +411,9 @@ export async function deleteRecord(req, res) {
 
             // Add delay between API calls to respect rate limits
             await new Promise(resolve => setTimeout(resolve, 120));
-            
+
             const result = await deleteRecordById(linkedRecord.id, token);
-            
+
             if (result.success) {
               deleteResult.status = 'deleted';
               console.log(`✅ Successfully deleted linked record: ${linkedRecord.id}`);
@@ -458,9 +426,9 @@ export async function deleteRecord(req, res) {
 
             workflowResults.push(deleteResult);
           }
-          
+
           recordResult.linkedRecords.workflow[workflowId] = workflowResults;
-          
+
           const successfulDeletes = workflowResults.filter(r => r.status === 'deleted').length;
           console.log(`📊 Workflow ${workflowId} complete: ${successfulDeletes}/${linkedRecords.length} linked records deleted`);
         }
@@ -476,15 +444,15 @@ export async function deleteRecord(req, res) {
 
       // Delete the parent record
       console.log(`🗑️  Deleting parent record: ${recordId}`);
-      
+
       // Log record before deletion
       await logRecordToFile('DELETE', recordId, parentRecord, 'PARENT');
-      
+
       // Add delay before parent deletion
       await new Promise(resolve => setTimeout(resolve, 200));
-      
+
       const result = await deleteRecordById(recordId, token);
-      
+
       if (result.success) {
         recordResult.status = 'deleted';
         console.log(`✅ Successfully deleted parent record: ${recordId}`);

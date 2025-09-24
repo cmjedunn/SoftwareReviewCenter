@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { deleteLinkedRecords, deleteRecord, getLinkedRecords, getRecords, restoreRecord} from './record.controller.js';
+import { deleteLinkedRecords, deleteRecord, getLinkedRecords, getRecords, restoreRecord} from './records.controller.js';
 
 const router = Router();
 

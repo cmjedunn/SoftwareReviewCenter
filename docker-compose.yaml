@@ -13,6 +13,8 @@ services:
       LOGICGATE_CLIENT_KEY: YXRoZW5ldW06aGppcU10M0I6RVhURVJOQUw=
       LOGICGATE_CLIENT_SECRET: oeIIKNzEQBH4BUadzWlbKUUj9Ioa9qk1
       LOGICGATE_ENV: atheneum
+      LOGFILES_ENABLED: true
+      APPLICATIONS_ID: CJWJnLUS
     ports:
       - "3000:3000"
     restart: unless-stopped
