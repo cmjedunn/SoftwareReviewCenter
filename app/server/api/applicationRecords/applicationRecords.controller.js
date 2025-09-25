@@ -3,6 +3,7 @@ import { logRequest } from '../utils/logRequest.js';
 import { createErrorResponse } from '../utils/createErrorResponse.js';
 import { createSuccessResponse } from '../utils/createSuccessResponse.js';
 import { getWorkflows } from '../workflows/workflows.controller.js';
+import { getRecordV1 } from '../utils/getRecordV1.js';
 
 const ENV = process.env.LOGICGATE_ENV;
 const BASE_URL = `https://${ENV}.logicgate.com`;
@@ -27,7 +28,7 @@ async function linkApplicationRecordToEnviornment(req, res) {
 
     try {
         console.log(`🔗 Linking application record: ${id} to enviornment ${enviornment}`);
-        
+
         const requestBody = {
             id: enviornment
         };
@@ -43,7 +44,7 @@ async function linkApplicationRecordToEnviornment(req, res) {
             },
             body: JSON.stringify(requestBody)
         });
-        
+
         if (!response.ok) {
             const errorBody = await response.text();
             console.log('❌ Link error response:', errorBody);
@@ -54,7 +55,7 @@ async function linkApplicationRecordToEnviornment(req, res) {
         // Handle potentially empty response
         let data;
         const responseText = await response.text();
-        
+
         if (responseText.trim() === '') {
             console.log('✅ Link successful - empty response (normal for link operations)');
             data = { success: true };
@@ -84,6 +85,76 @@ async function linkApplicationRecordToEnviornment(req, res) {
     }
 }
 
+async function advanceApplicationRecord(req, res) {
+    logRequest(req);
+
+    const { id, application, workflow, step } = req.body;
+
+    if (!id || !application || !workflow || !step) {
+        console.log('❌ Missing required parameters: id, application, workflow, step');
+        return res.status(400).json(createErrorResponse(req, 'Missing id, application, workflow, step', 400));
+    }
+
+    let token = await getToken(res);
+    if (!token) return;
+
+    try {
+        console.log(`☑️ Advancing application record: ${id} to step ${step}`);
+
+        const record = await getRecordV1(id, token);
+
+        const url = `${BASE_URL}/api/v1/records/${id}/progress/applications/${application}/workflows/${workflow}/steps/${step}`;
+
+        const response = await fetch(url, {
+            method: 'PUT',
+            headers: {
+                Authorization: `Bearer ${token}`,
+                Accept: 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: record
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            console.log('❌ Advance error response:', errorBody);
+            console.log(`⚠️  Failed to advance record: ${id}`);
+            throw new Error(`Failed to advance record: ${response.status} ${errorBody}`);
+        }
+
+        // Handle potentially empty response
+        let data;
+        const responseText = await response.text();
+
+        if (responseText.trim() === '') {
+            console.log('✅ Advance successful - empty response (normal for advance operations)');
+            data = { success: true };
+        } else {
+            try {
+                data = JSON.parse(responseText);
+            } catch (parseError) {
+                console.log('✅ Advance successful - non-JSON response:', responseText);
+                data = { success: true, rawResponse: responseText };
+            }
+        }
+
+        console.log(`✅ Successfully advanced record to step: ${step}`);
+
+        const successResponse = createSuccessResponse(req, {
+            id: id,
+            step: step,
+            status: 'advanced',
+            record: data
+        });
+
+        return res.status(200).json(successResponse);
+
+    } catch (error) {
+        console.error(`❌ Error advancing application record:`, error.message);
+        return res.status(500).json(createErrorResponse(req, error.message));
+    }
+}
+
 /**
  * ENDPOINT FUNCTIONS
  */
@@ -102,7 +173,7 @@ export async function createApplicationRecord(req, res) {
     if (!token) return;
 
     try {
-        const nameFieldId = 'mdewoh43';
+        const nameFieldId = 'hQSj3kTc';
         const ownerFieldId = 'ctoTaXG3';
         const descriptionFieldId = 'qk1YEvJw';
         const layout = 'xJFfK2Fu';
@@ -224,6 +295,65 @@ export async function createApplicationRecord(req, res) {
             // Don't throw here - record was created successfully, linking just failed
         }
 
+        // Advance record to next step (if linking was successful)
+        let advanceApplicationRecordResponse;
+        let advancingSuccessful = false;
+        
+        if (linkingSuccessful) {
+            // Find the next step after ORIGIN (typically END or next step in workflow)
+            const nextStep = workflowResponse.steps.find(step => step.type === "END")?.id;
+            
+            if (nextStep) {
+                const advanceApplicationRecordReq = {
+                    body: {
+                        id: recordId,
+                        application: APPLICATIONS_ID,
+                        workflow: workflowResponse.workflow.id,
+                        step: nextStep
+                    }
+                };
+
+                const advanceApplicationRecordRes = {
+                    json: (data) => {
+                        console.log('✅ Advance operation completed successfully');
+                        advanceApplicationRecordResponse = data;
+                        advancingSuccessful = true;
+                    },
+                    status: (code) => {
+                        // Only treat non-success status codes as errors
+                        if (code >= 400) {
+                            return {
+                                json: (data) => {
+                                    console.error('❌ Advance function returned error status:', code, data);
+                                    throw new Error(`Failed to advance application record: ${data.error || 'Unknown error'}`);
+                                }
+                            };
+                        } else {
+                            // For success status codes (200-299), return an object that will call json()
+                            return {
+                                json: (data) => {
+                                    console.log('✅ Advance operation completed with status:', code);
+                                    advanceApplicationRecordResponse = data;
+                                    advancingSuccessful = true;
+                                }
+                            };
+                        }
+                    }
+                };
+
+                try {
+                    await advanceApplicationRecord(advanceApplicationRecordReq, advanceApplicationRecordRes);
+                } catch (error) {
+                    console.warn(`⚠️  Failed to advance application record: ${recordId} - ${error.message}`);
+                    // Don't throw here - record was created and linked successfully, advancing just failed
+                }
+            } else {
+                console.warn(`⚠️  No END step found in workflow - skipping advance operation`);
+            }
+        } else {
+            console.log(`⚠️  Skipping advance operation - linking was not successful`);
+        }
+
         const successResponse = createSuccessResponse(req, {
             id: recordId,
             name: name,
@@ -231,7 +361,9 @@ export async function createApplicationRecord(req, res) {
             enviornment: environmentId,
             status: 'created',
             linked: linkingSuccessful,
-            linkResponse: linkApplicationRecordResponse
+            advanced: advancingSuccessful,
+            linkResponse: linkApplicationRecordResponse,
+            advanceResponse: advanceApplicationRecordResponse
         });
 
         return res.status(201).json(successResponse);
