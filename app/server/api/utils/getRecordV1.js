@@ -16,7 +16,11 @@ export async function getRecordV1(recordId, token) {
       return null;
     }
 
-    return await response.json();
+    const jsonData = await response.json();
+    //console.log(JSON.stringify(jsonData)); // Use the parsed JSON data
+
+    return jsonData;
+
   } catch (error) {
     console.warn(`⚠️  Error fetching record ${recordId}:`, error.message);
     return null;

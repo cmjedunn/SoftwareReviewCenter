@@ -15,6 +15,7 @@ services:
       LOGICGATE_ENV: atheneum
       LOGFILES_ENABLED: true
       APPLICATIONS_ID: CJWJnLUS
+      SCF_ID: 8ln56X6y
     ports:
       - "3000:3000"
     restart: unless-stopped

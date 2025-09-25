@@ -5,7 +5,8 @@ import { fileURLToPath } from 'url';
 // Import Endpoint Routes
 import recordRoutes from './api/records/records.routes.js';
 import workflowRoutes from './api/workflows/workflows.routes.js'
-import applicationRecordRoutes from './api/applicationRecords/applicationRecords.routes.js'
+import applicationRecordRoutes from './api/records/applicationRecords/applicationRecords.routes.js'
+import environmentRoutes from './api/records/environmentRecords/environmentRecords.routes.js';
 
 export default function initRoutes(app) {
     const __filename = fileURLToPath(import.meta.url);
@@ -17,7 +18,8 @@ export default function initRoutes(app) {
     // API routes
     app.use('/api/records', recordRoutes);
     app.use('/api/workflows', workflowRoutes);
-    app.use('/api/applicationRecords', applicationRecordRoutes);
+    app.use('/api/applications', applicationRecordRoutes);
+    app.use('/api/environments', environmentRoutes);
     // Health
     app.get('/health', (req, res) => {
         res.status(200).json({

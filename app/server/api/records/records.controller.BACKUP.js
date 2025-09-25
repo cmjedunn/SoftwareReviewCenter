@@ -1,6 +1,6 @@
 import { getToken } from '../utils/getToken.js';
 import { logRequest } from '../utils/logRequest.js';
-import { getWorkflowsData } from '../workflows/workflows.controller.js';
+import { getWorkflows } from '../workflows/workflows.controller.js';
 import { createErrorResponse } from '../utils/createErrorResponse.js';
 import { createSuccessResponse } from '../utils/createSuccessResponse.js';
 import fs from 'fs';
@@ -115,147 +115,205 @@ async function getRecordsByWorkflow(id, workflowId, token) {
 }
 
 /**
- * BUSINESS LOGIC FUNCTIONS
+ * ENDPOINT FUNCTIONS
  */
 
-export async function getRecordsData(params = {}) {
+export async function getRecords(req, res) {
+  logRequest(req);
 
-  let token = await getToken();
-  if (!token) throw new Error('Failed to get authentication token');
+  let token = await getToken(res);
+  if (!token) return;
 
   const query = new URLSearchParams();
-  if (params['application-id'])
-    query.append('application-id', params['application-id']);
-  if (params['workflow-id'])
-    query.append('workflow-id', params['workflow-id']);
-  if (params['step-id'])
-    query.append('step-id', params['step-id']);
-  if (params['updated-min'])
-    query.append('updated-min', params['updated-min']);
-  if (params.page)
-    query.append('page', params.page);
-  if (params.size)
-    query.append('size', params.size);
+  if (req.body['application-id'])
+    query.append('application-id', req.body['application-id']);
+  if (req.body['workflow-id'])
+    query.append('workflow-id', req.body['workflow-id']);
+  if (req.body['step-id'])
+    query.append('step-id', req.body['step-id']);
+  if (req.body['updated-min'])
+    query.append('updated-min', req.body['updated-min']);
+  if (req.body.page)
+    query.append('page', req.body.page);
+  if (req.body.size)
+    query.append('size', req.body.size);
 
-  const requestUrl = `${BASE_URL}/api/v2/records/${params.id ? `${params.id}` : `?${query}`}`;
+  const requestUrl = `${BASE_URL}/api/v2/records/${req.body.id ? `${req.body.id}` : `?${query}`}`;
   console.log(`🔍 Fetching records from: ${requestUrl}`);
 
-  const response = await fetch(requestUrl, {
-    method: 'GET',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/json',
-    },
-  });
+  try {
+    const response = await fetch(requestUrl, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+      },
+    });
 
-  if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(`Failed to fetch records: ${response.status} ${errorBody}`);
+    if (!response.ok) {
+      const errorBody = await response.text();
+      throw new Error(`Failed to fetch records: ${response.status} ${errorBody}`);
+    }
+
+    const data = await response.json();
+    console.log(`✅ Successfully retrieved ${Array.isArray(data.content) ? data.content.length : 1} record(s)`);
+    return res.json(data);
+
+  } catch (error) {
+    console.error('❌ Error getting records:', error.message);
+    return res.status(500).json(createErrorResponse(req, error.message));
   }
-
-  const data = await response.json();
-  console.log(`✅ Successfully retrieved ${Array.isArray(data.content) ? data.content.length : 1} record(s)`);
-  return data;
 }
 
-export async function getLinkedRecordsData(id, linkedWorkflowId = null) {
-  let token = await getToken();
-  if (!token) throw new Error('Failed to get authentication token');
+export async function getLinkedRecords(req, res) {
+  logRequest(req);
 
-  console.log(`🔍 Fetching parent record: ${id}`);
+  const { id, linkedWorkflowId } = req.body;
 
-  // Get full parent record details
-  const parentRecord = await getFullRecord(id, token);
-  if (!parentRecord) {
-    throw new Error('Parent record not found');
-  }
+  let token = await getToken(res);
+  if (!token) return;
 
-  console.log(`✅ Retrieved parent record: ${id}`);
+  try {
+    console.log(`🔍 Fetching parent record: ${id}`);
 
-  // Build the workflows object directly
-  const workflowsObject = {};
+    // Get full parent record details
+    const parentRecord = await getFullRecord(id, token);
+    if (!parentRecord) {
+      console.log(`❌ Parent record ${id} not found`);
+      return res.status(404).json(createErrorResponse(req, 'Parent record not found', 404));
+    }
 
-  if (!linkedWorkflowId) {
-    console.log(`🔍 Fetching linked records for all workflows`);
+    console.log(`✅ Retrieved parent record: ${id}`);
 
-    // Get all workflows using clean function
-    const workflows = await getWorkflowsData({ size: 1000 });
+    // Build the workflows object directly
+    const workflowsObject = {};
 
-    for (const workflow of workflows) {
-      const records = await getRecordsByWorkflow(id, workflow.id, token);
-      workflowsObject[workflow.id] = records.map(record => ({
+    if (!linkedWorkflowId) {
+      console.log(`🔍 Fetching linked records for all workflows`);
+
+      // Get all workflows
+      const mockReq = { body: { size: 1000 } };
+      let workflows;
+      const mockRes = {
+        json: (data) => { workflows = data; },
+        status: (code) => ({ json: (data) => { throw new Error(`Failed to get workflows: ${data.error}`); } })
+      };
+
+      await getWorkflows(mockReq, mockRes);
+
+      for (const workflow of workflows) {
+        const records = await getRecordsByWorkflow(id, workflow.id, token);
+        workflowsObject[workflow.id] = records.map(record => ({
+          record: record
+        }));
+      }
+
+      console.log(`✅ Retrieved linked records for ${workflows.length} workflows`);
+    } else {
+      console.log(`🔍 Fetching linked records for workflow: ${linkedWorkflowId}`);
+
+      const records = await getRecordsByWorkflow(id, linkedWorkflowId, token);
+      workflowsObject[linkedWorkflowId] = records.map(record => ({
         record: record
       }));
+
+      console.log(`✅ Retrieved ${records.length} linked records for workflow ${linkedWorkflowId}`);
     }
 
-    console.log(`✅ Retrieved linked records for ${workflows.length} workflows`);
-  } else {
-    console.log(`🔍 Fetching linked records for workflow: ${linkedWorkflowId}`);
+    const response = createSuccessResponse(req, {
+      record: parentRecord,
+      linkedRecords: {
+        workflow: workflowsObject
+      }
+    });
+
+    const totalLinkedRecords = Object.values(workflowsObject).reduce((sum, records) => sum + records.length, 0);
+    console.log(`✅ Completed - Found ${totalLinkedRecords} linked records across ${Object.keys(workflowsObject).length} workflow(s)`);
+
+    return res.json(response);
+
+  } catch (error) {
+    console.error(`❌ Error getting linked records for ${id}:`, error.message);
+    return res.status(500).json(createErrorResponse(req, error.message));
+  }
+}
+
+export async function restoreRecord(req, res) {
+  logRequest(req);
+
+  console.log(`⚠️  Restore functionality not yet implemented`);
+  return res.status(501).json(createErrorResponse(req, 'Not implemented yet', 501));
+}
+
+export async function deleteLinkedRecords(req, res) {
+  logRequest(req);
+
+  const { id, linkedWorkflowId } = req.body;
+
+  if (!id || !linkedWorkflowId) {
+    console.log('❌ Missing required parameters: id or linkedWorkflowId');
+    return res.status(400).json(createErrorResponse(req, 'Missing id or linkedWorkflowId', 400));
+  }
+
+  let token = await getToken(res);
+  if (!token) return;
+
+  try {
+    console.log(`🔍 Fetching linked records for deletion - Record: ${id}, Workflow: ${linkedWorkflowId}`);
 
     const records = await getRecordsByWorkflow(id, linkedWorkflowId, token);
-    workflowsObject[linkedWorkflowId] = records.map(record => ({
-      record: record
-    }));
+    console.log(`📊 Found ${records.length} linked records to delete`);
 
-    console.log(`✅ Retrieved ${records.length} linked records for workflow ${linkedWorkflowId}`);
-  }
+    const results = [];
 
-  const totalLinkedRecords = Object.values(workflowsObject).reduce((sum, records) => sum + records.length, 0);
-  console.log(`✅ Completed - Found ${totalLinkedRecords} linked records across ${Object.keys(workflowsObject).length} workflow(s)`);
+    for (const record of records) {
+      console.log(`🗑️  Deleting linked record: ${record.id}`);
 
-  return {
-    record: parentRecord,
-    linkedRecords: {
-      workflow: workflowsObject
-    }
-  };
-}
+      // Log record before deletion
+      await logRecordToFile('DELETE', record.id, record, 'LINKED');
 
-export async function deleteLinkedRecordsData(id, linkedWorkflowId) {
-  let token = await getToken();
-  if (!token) throw new Error('Failed to get authentication token');
+      const deleteResult = await deleteRecordById(record.id, token);
 
-  console.log(`🔍 Fetching linked records for deletion - Record: ${id}, Workflow: ${linkedWorkflowId}`);
+      if (deleteResult.success) {
+        console.log(`✅ Successfully deleted linked record: ${record.id}`);
+        results.push({ id: record.id, status: 'deleted' });
+      } else {
+        console.log(`❌ Failed to delete linked record ${record.id}: ${deleteResult.error}`);
+        results.push({ id: record.id, status: 'failed', message: deleteResult.error });
+      }
 
-  const records = await getRecordsByWorkflow(id, linkedWorkflowId, token);
-  console.log(`📊 Found ${records.length} linked records to delete`);
-
-  const results = [];
-
-  for (const record of records) {
-    console.log(`🗑️  Deleting linked record: ${record.id}`);
-
-    // Log record before deletion
-    await logRecordToFile('DELETE', record.id, record, 'LINKED');
-
-    const deleteResult = await deleteRecordById(record.id, token);
-
-    if (deleteResult.success) {
-      console.log(`✅ Successfully deleted linked record: ${record.id}`);
-      results.push({ id: record.id, status: 'deleted' });
-    } else {
-      console.log(`❌ Failed to delete linked record ${record.id}: ${deleteResult.error}`);
-      results.push({ id: record.id, status: 'failed', message: deleteResult.error });
+      // Add delay to respect rate limits
+      await new Promise(resolve => setTimeout(resolve, 120));
     }
 
-    // Add delay to respect rate limits
-    await new Promise(resolve => setTimeout(resolve, 120));
+    const successCount = results.filter(r => r.status === 'deleted').length;
+    console.log(`✅ Deletion complete - Successfully deleted ${successCount}/${records.length} linked records`);
+
+    return res.json({
+      successCount,
+      results
+    });
+
+  } catch (error) {
+    console.error(`❌ Error deleting linked records for ${id}:`, error.message);
+    return res.status(500).json(createErrorResponse(req, error.message));
   }
-
-  const successCount = results.filter(r => r.status === 'deleted').length;
-  console.log(`✅ Deletion complete - Successfully deleted ${successCount}/${records.length} linked records`);
-
-  return {
-    successCount,
-    results
-  };
 }
 
-export async function deleteRecordData(id, workflowIds = []) {
-  let token = await getToken();
-  if (!token) throw new Error('Failed to get authentication token');
+export async function deleteRecord(req, res) {
+  logRequest(req);
 
-  let records = !Array.isArray(id) ? [id] : id;
+  const { id, workflowIds = [] } = req.body;
+
+  if (!id) {
+    console.log('❌ Missing required parameter: id');
+    return res.status(400).json(createErrorResponse(req, 'Missing id', 400));
+  }
+
+  let token = await getToken(res);
+  if (!token) return;
+
+  let records = !Array.isArray(req.body.id) ? [req.body.id] : req.body.id;
   console.log(`📊 Processing ${records.length} record(s) for deletion`);
 
   const processRecord = async (recordId) => {
@@ -290,8 +348,21 @@ export async function deleteRecordData(id, workflowIds = []) {
       if (workflowIds.length > 0) {
         console.log(`🔍 Processing ${workflowIds.length} workflow(s) for record ${recordId}: ${workflowIds.join(', ')}`);
 
-        // Get linked records using clean internal call
-        const linkedRecordsResponse = await getLinkedRecordsData(recordId);
+        // Get linked records using internal call
+        const internalReq = { body: { id: recordId } };
+        let linkedRecordsResponse;
+
+        const internalRes = {
+          json: (data) => { linkedRecordsResponse = data; },
+          status: (code) => ({
+            json: (data) => {
+              throw new Error(`Failed to get linked records: ${data.error}`);
+            }
+          })
+        };
+
+        await getLinkedRecords(internalReq, internalRes);
+        
 
         // Extract available workflows from response
         const availableWorkflows = Object.keys(linkedRecordsResponse.linkedRecords.workflow);
@@ -402,140 +473,66 @@ export async function deleteRecordData(id, workflowIds = []) {
     }
   };
 
-  const processedRecords = [];
+  try {
+    const processedRecords = [];
 
-  // Process each record sequentially to avoid overwhelming the API
-  for (let recordIndex = 0; recordIndex < records.length; recordIndex++) {
-    const recordId = records[recordIndex];
-    console.log(`🔄 Processing record ${recordIndex + 1}/${records.length}: ${recordId}`);
+    // Process each record sequentially to avoid overwhelming the API
+    for (let recordIndex = 0; recordIndex < records.length; recordIndex++) {
+      const recordId = records[recordIndex];
+      console.log(`🔄 Processing record ${recordIndex + 1}/${records.length}: ${recordId}`);
 
-    try {
-      const recordResult = await processRecord(recordId);
-      processedRecords.push(recordResult);
-    } catch (error) {
-      console.error(`❌ Failed to process record ${recordId}:`, error.message);
-      processedRecords.push({
-        status: 'failed',
-        record: { id: recordId, error: 'Processing failed' },
-        linkedRecords: { workflow: {} },
-        error: error.message || 'Unknown error processing record'
-      });
+      try {
+        const recordResult = await processRecord(recordId);
+        processedRecords.push(recordResult);
+      } catch (error) {
+        console.error(`❌ Failed to process record ${recordId}:`, error.message);
+        processedRecords.push({
+          status: 'failed',
+          record: { id: recordId, error: 'Processing failed' },
+          linkedRecords: { workflow: {} },
+          error: error.message || 'Unknown error processing record'
+        });
+      }
+
+      // Add delay between records to further respect rate limits
+      if (recordIndex < records.length - 1) {
+        console.log(`⏳ Waiting 1 second before next record...`);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
     }
 
-    // Add delay between records to further respect rate limits
-    if (recordIndex < records.length - 1) {
-      console.log(`⏳ Waiting 1 second before next record...`);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
-  }
+    // Calculate success and failure counts
+    let successCount = 0;
+    let failureCount = 0;
 
-  // Calculate success and failure counts
-  let successCount = 0;
-  let failureCount = 0;
+    processedRecords.forEach(record => {
+      if (record.status === 'deleted') {
+        successCount++;
+      } else if (record.status === 'failed') {
+        failureCount++;
+      }
 
-  processedRecords.forEach(record => {
-    if (record.status === 'deleted') {
-      successCount++;
-    } else if (record.status === 'failed') {
-      failureCount++;
-    }
-
-    // Count linked record statuses
-    Object.values(record.linkedRecords.workflow).forEach(workflowRecords => {
-      workflowRecords.forEach(linkedRecord => {
-        if (linkedRecord.status === 'deleted') {
-          successCount++;
-        } else if (linkedRecord.status === 'failed') {
-          failureCount++;
-        }
+      // Count linked record statuses
+      Object.values(record.linkedRecords.workflow).forEach(workflowRecords => {
+        workflowRecords.forEach(linkedRecord => {
+          if (linkedRecord.status === 'deleted') {
+            successCount++;
+          } else if (linkedRecord.status === 'failed') {
+            failureCount++;
+          }
+        });
       });
     });
-  });
 
-  console.log(`✅ Delete operation complete - Successes: ${successCount}, Failures: ${failureCount}`);
-  
-  return {
-    records: processedRecords,
-    successes: successCount,
-    failures: failureCount
-  };
-}
+    const response = createSuccessResponse(req, {
+      records: processedRecords,
+      successes: successCount,
+      failures: failureCount
+    });
 
-/**
- * ENDPOINT FUNCTIONS
- */
-
-export async function getRecords(req, res) {
-  logRequest(req);
-
-  try {
-    const data = await getRecordsData(req.body);
-    return res.json(data);
-  } catch (error) {
-    console.error('❌ Error getting records:', error.message);
-    return res.status(500).json(createErrorResponse(req, error.message));
-  }
-}
-
-export async function getLinkedRecords(req, res) {
-  logRequest(req);
-
-  const { id, linkedWorkflowId } = req.body;
-
-  try {
-    const result = await getLinkedRecordsData(id, linkedWorkflowId);
-    const response = createSuccessResponse(req, result);
+    console.log(`✅ Delete operation complete - Successes: ${successCount}, Failures: ${failureCount}`);
     return res.json(response);
-  } catch (error) {
-    if (error.message === 'Parent record not found') {
-      console.log(`❌ Parent record ${id} not found`);
-      return res.status(404).json(createErrorResponse(req, 'Parent record not found', 404));
-    }
-    console.error(`❌ Error getting linked records for ${id}:`, error.message);
-    return res.status(500).json(createErrorResponse(req, error.message));
-  }
-}
 
-export async function restoreRecord(req, res) {
-  logRequest(req);
-
-  console.log(`⚠️  Restore functionality not yet implemented`);
-  return res.status(501).json(createErrorResponse(req, 'Not implemented yet', 501));
-}
-
-export async function deleteLinkedRecords(req, res) {
-  logRequest(req);
-
-  const { id, linkedWorkflowId } = req.body;
-
-  if (!id || !linkedWorkflowId) {
-    console.log('❌ Missing required parameters: id or linkedWorkflowId');
-    return res.status(400).json(createErrorResponse(req, 'Missing id or linkedWorkflowId', 400));
-  }
-
-  try {
-    const result = await deleteLinkedRecordsData(id, linkedWorkflowId);
-    return res.json(result);
-  } catch (error) {
-    console.error(`❌ Error deleting linked records for ${id}:`, error.message);
-    return res.status(500).json(createErrorResponse(req, error.message));
-  }
-}
-
-export async function deleteRecord(req, res) {
-  logRequest(req);
-
-  const { id, workflowIds = [] } = req.body;
-
-  if (!id) {
-    console.log('❌ Missing required parameter: id');
-    return res.status(400).json(createErrorResponse(req, 'Missing id', 400));
-  }
-
-  try {
-    const result = await deleteRecordData(id, workflowIds);
-    const response = createSuccessResponse(req, result);
-    return res.json(response);
   } catch (error) {
     console.error('❌ Error during delete operation:', error.message);
     return res.status(500).json(createErrorResponse(req, error.message));
