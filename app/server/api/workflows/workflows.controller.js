@@ -122,6 +122,39 @@ export async function getWorkflowsData(params = {}) {
   return results;
 }
 
+export async function getWorkflowMapsData(params = {}) {
+  let token = await getToken();
+  if (!token) throw new Error('Failed to get authentication token');
+
+  const query = new URLSearchParams();
+
+  if (!params['workflow1'] || !params['workflow2'])
+    throw new Error('Missing required params: workflow1 or workflow2');
+  query.append('workflow1', params['workflow1']);
+  query.append('workflow2', params['workflow2']);
+
+  const requestUrl = `${BASE_URL}/api/v1/workflows/maps?${query}`;
+  console.log(`🔍 Fetching workflow maps from: ${requestUrl}`);
+
+  const response = await fetch(requestUrl, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`Failed to fetch workflow maps: ${response.status} ${errorBody}`);
+  }
+
+  const data = await response.json();
+
+  console.log(`✅ Successfully retrieved workflow map`);
+  return data;
+}
+
 /**
  * ENDPOINT FUNCTIONS
  */
@@ -143,6 +176,25 @@ export async function getWorkflows(req, res) {
 
   } catch (error) {
     console.error(`❌ Error getting workflows:`, error.message);
+    return res.status(500).json(createErrorResponse(req, error.message));
+  }
+}
+
+export async function getWorkflowMaps(req, res) {
+  logRequest(req);
+
+  try {
+    const params = {
+      workflow1: req.query.workflow1,
+      workflow2: req.query.workflow2
+    };
+    const result = await getWorkflowMapsData(params);
+    const response = createSuccessResponse(req, result);
+    return res.json(response);
+
+
+  } catch (error) {
+    console.error(`❌ Error getting workflow maps:`, error.message);
     return res.status(500).json(createErrorResponse(req, error.message));
   }
 }

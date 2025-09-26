@@ -59,15 +59,11 @@ export async function getEnvironmentControlFrameworksData(id) {
     let controlFrameworkWorkflows = [];
 
     for (const cf of applicableControlFrameworks) {
-        //console.log(JSON.stringify(cf));
 
         const matchingWorkflows = scfWorkflows.filter(item =>
             item.name?.includes(cf.textValue.replaceAll(" ", "")) &&
             item.name?.includes("Controls")
         );
-
-        console.log('🐛 DEBUG - matchingWorkflows found:', matchingWorkflows.length);
-        console.log('🐛 DEBUG - matchingWorkflows:', matchingWorkflows);
 
         if (matchingWorkflows.length > 0) {
             // Sort by xpos first (ascending), then ypos (ascending)
@@ -76,14 +72,12 @@ export async function getEnvironmentControlFrameworksData(id) {
                 return (a.ypos || 0) - (b.ypos || 0);
             })[0];
 
-            console.log('🐛 DEBUG - bestMatch:', bestMatch);
+            console.log('📄 Control Framework Match:', bestMatch.id);
             controlFrameworkWorkflows.push(await getWorkflowData(bestMatch.id));
         } else {
             controlFrameworkWorkflows.push(null);
         }
     }
-
-    console.log('🐛 Found Control Framework Workflows: ', controlFrameworkWorkflows);
 
     return controlFrameworkWorkflows;
 }

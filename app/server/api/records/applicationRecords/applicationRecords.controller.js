@@ -4,11 +4,13 @@ import { createErrorResponse } from '../../utils/createErrorResponse.js';
 import { createSuccessResponse } from '../../utils/createSuccessResponse.js';
 import { getWorkflowData, getWorkflowsData } from '../../workflows/workflows.controller.js';
 import { getRecordV1 } from '../../utils/getRecordV1.js';
-import { getRecordsData } from '../records.controller.js';
+import { getLinkedRecordsData, getRecordsData } from '../records.controller.js';
+import { getEnvironmentControlFrameworksData } from '../environmentRecords/environmentRecords.controller.js';
 
 const ENV = process.env.LOGICGATE_ENV;
 const BASE_URL = `https://${ENV}.logicgate.com`;
 const APPLICATIONS_ID = process.env.APPLICATIONS_ID;
+const SCF_ID = process.env.SCF_ID;
 
 /**
  * HELPER FUNCTIONS
@@ -24,7 +26,7 @@ export async function getApplicationRecordsData(id) {
     const applicationWorkflow = await getWorkflowData(applicationWorkflows.find(item => item.name === "Applications")?.id);
 
     // Get enviornment records
-    return await getRecordsData({id: id, 'workflow-id': applicationWorkflow.workflow.id, size: 1000 });
+    return await getRecordsData({ id: id, 'workflow-id': applicationWorkflow.workflow.id, size: 1000 });
 }
 
 export async function createApplicationRecordData(name, owner, description, environment) {
@@ -132,6 +134,32 @@ export async function createApplicationRecordData(name, owner, description, envi
         console.log(`⚠️  Skipping advance operation - linking was not successful`);
     }
 
+    let createControlInstancesResponse;
+    let createControlInstancesSuccessful = false;
+
+    if (linkingSuccessful && advancingSuccessful) {
+        const endStep = applicationWorkflow.steps.find(step => step.type === "END")?.id;
+        if (endStep) {
+            try {
+                createControlInstancesResponse = await createControlInstancesData(
+                    recordId,
+                    SCF_ID,
+                    endStep,
+                    environment
+                )
+                createControlInstancesSuccessful = true;
+                console.log('✅ Control instances created successfully');
+            } catch (error) {
+                console.warn(`⚠️  Failed to create control instances for application: ${recordId} - ${error.message}`);
+                // Don't throw here either since we still want to be successful if control instances are not linked.
+            }
+        } else {
+            console.log(`⚠️  Skipping link operation - linking or advancing was not successful`);
+        }
+    }
+
+    const linkedRecords = await getLinkedRecordsData({id: recordId});
+
     return {
         id: recordId,
         name: name,
@@ -140,8 +168,11 @@ export async function createApplicationRecordData(name, owner, description, envi
         status: 'created',
         linked: linkingSuccessful,
         advanced: advancingSuccessful,
+        controlInstances: createControlInstancesResponse,
         linkResponse: linkApplicationRecordResponse,
-        advanceResponse: advanceApplicationRecordResponse
+        advanceResponse: advanceApplicationRecordResponse,
+        createControlInstancesResponse: createControlInstancesResponse,
+        records: linkedRecords
     };
 }
 
@@ -199,7 +230,7 @@ export async function advanceApplicationRecordData(id, application, workflow, st
     let token = await getToken();
     if (!token) throw new Error('Failed to get authentication token');
 
-    console.log(`☑️ Advancing application record: ${id} to step ${step}`);
+    console.log(`☑️  Advancing application record: ${id} to step ${step}`);
 
     const record = await getRecordV1(id, token);
     const url = `${BASE_URL}/api/v1/records/${id}/progress/applications/${application}/workflows/${workflow}/steps/${step}`;
@@ -242,6 +273,196 @@ export async function advanceApplicationRecordData(id, application, workflow, st
         status: 'advanced',
         record: data
     };
+}
+
+export async function createControlInstancesData(id, application, step, environment) {
+    let token = await getToken();
+    if (!token) throw new Error('Failed to get authentication token');
+
+    console.log(`🔄 Creating security control instances for record: ${id}`);
+
+    // Get "Bulk Create and Link section from application form"
+    try {
+        // Get the workflow link
+        const formRes = await fetch(`${BASE_URL}/api/v1/form/sections?step=${step}`,
+            {
+                method: 'GET',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+            });
+
+        if (!formRes.ok) {
+            const errorText = await formRes.text();
+            console.warn(`⚠️  Failed to fetch form response for step: ${step}: HTTP ${formRes.status} ${errorText}`);
+            return null;
+        }
+
+        const formSections = await formRes.json();
+
+        const workflowLink = formSections.find(item => item.name === "Application Control Instances:");
+
+        if (!workflowLink || !workflowLink.id)
+            throw new Error(`${!workflowLink ? 'No workflow link found' : 'Workflow link found but is missing id'}`);
+
+        console.log(`🔗 Workflow link obtained successfully: ${workflowLink.id}`);
+
+        console.log(`🔍 Searching for sources for workflow link: ${workflowLink.id}`);
+        // Get the bulk create workflow sources
+        const bulkCreateWorkflowSourcesRes = await fetch(`${BASE_URL}/api/v1/bulk-create-workflow-source/section/workflow-link/${workflowLink.id}`,
+            {
+                method: 'GET',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+            });
+
+        if (!bulkCreateWorkflowSourcesRes.ok) {
+            const errorText = await formRes.text();
+            console.warn(`⚠️  Failed to fetch bulk create workflow sources for workflow link: ${workflowLink.id}: HTTP ${bulkCreateWorkflowSourcesRes.status} ${errorText}`);
+            return null;
+        }
+
+        const sources = await bulkCreateWorkflowSourcesRes.json();
+
+        if (!sources)
+            throw new Error(`No sources found for ${workflowLink.id}`);
+
+        console.log(`📳 Sources found for workflow link: ${workflowLink.id}`);
+
+        console.log(`🔍 Getting environment control frameworks for environment: ${environment}`);
+        // Get eviornment control framework workflows
+        const controlFrameworkWorkflows = await getEnvironmentControlFrameworksData(environment);
+
+        console.log(`🚬 Filtering sources: ${controlFrameworkWorkflows.length}`);
+
+        // For each control framework workflow
+        for (const controlFrameworkWorkflow of controlFrameworkWorkflows) {
+            let correctSource;
+            // Filter correct sources
+            for (const source of sources) {
+                //console.log("soruce:" + source.sourceWorkflow.id + " |-| cf: " + controlFrameworkWorkflow.workflow.id);
+                if (source.sourceWorkflow.id == controlFrameworkWorkflow.workflow.id) {
+                    console.log(`🧲 Found Match: Source: ${source.sourceWorkflow.id} Control Framework: ${controlFrameworkWorkflow.workflow.id}`);
+                    correctSource = source;
+                }
+            }
+            if (!correctSource) {
+                console.warn(`⚠️  No source found. `);
+                return null;
+            }
+
+            console.log(`🔍 Getting environment workflows for environment: ${environment}`);
+
+            // Get the "Repository" or END step
+            const endStep = controlFrameworkWorkflow.steps.find(step => step.name.toLowerCase().includes("repository") && step.type.toUpperCase() === "END");
+            // Get controls from controls repository
+            const controlRecords = await getRecordsData({ 'application-id': application, 'workflow-id': controlFrameworkWorkflow.workflow.id, 'step-id': endStep.id, size: 1000 });
+
+            const sourceRecordIds = controlRecords.content.map(item => item.id);
+
+            if (!sourceRecordIds || !(sourceRecordIds.length > 0)) {
+                console.warn(`⚠️  No source records found. `);
+                return null;
+            }
+            //console.log(sourceRecordIds);
+
+            // SCARY PART: TIME TO BULK CREATE AND LINK BABY (WITH RETRY LOGIC)
+            const RETRY_DELAY_MS = 5 * 60 * 1000; // 5 minutes
+            const REQUEST_TIMEOUT_MS = 30 * 1000; // 30 seconds
+
+            let bulkCreateAndLinkControlsRes;
+
+            while (true) {
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+                    bulkCreateAndLinkControlsRes = await fetch(`${BASE_URL}/api/v1/bulk-create-and-link`, {
+                        method: 'POST',
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            bulkCreateSourceId: correctSource.id,
+                            parentRecordId: id,
+                            sourceRecordIds: sourceRecordIds
+                        }),
+                        signal: controller.signal
+                    });
+
+                    clearTimeout(timeoutId);
+
+                    // If we got a response (good or bad), break out of retry loop
+                    if (!bulkCreateAndLinkControlsRes.ok) {
+                        console.warn(`⚠️ Bulk create request failed: ${bulkCreateAndLinkControlsRes.status}`);
+                    }
+                    break; // Exit retry loop
+
+                } catch (error) {
+                    // Only retry on timeout errors
+                    if (error.name === 'AbortError' || error.code === 'ETIMEDOUT' || error.message.includes('timeout')) {
+                        console.log(`⏱️ Request timed out, retrying in 5 minutes...`);
+                        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+                        continue; // Retry
+                    } else {
+                        // For other errors, re-throw
+                        throw error;
+                    }
+                }
+            }
+
+            // Poll for completion status
+            let sourceRecordsRemaining = 1; // Start with non-zero to enter the loop
+
+            while (sourceRecordsRemaining > 0) {
+                try {
+                    const bulkCreateAndLinkStatusRes = await fetch(`${BASE_URL}/api/v1/bulk-create-and-link/status?parentRecordId=${id}&workflowLinkId=${controlFrameworkWorkflow.workflow.id}`, {
+                        method: 'GET',
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                    });
+
+                    if (!bulkCreateAndLinkStatusRes.ok) {
+                        console.warn(`⚠️ Status check failed: ${bulkCreateAndLinkStatusRes.status}`);
+                        throw new Error(`Status check failed with status: ${bulkCreateAndLinkStatusRes.status}`);
+                    }
+
+                    const statusData = await bulkCreateAndLinkStatusRes.json();
+                    sourceRecordsRemaining = statusData.sourceRecordsRemaining;
+
+                    if (sourceRecordsRemaining > 0) {
+                        console.log(`📊 Records remaining: ${sourceRecordsRemaining}, checking again in 10 seconds...`);
+                        await new Promise(resolve => setTimeout(resolve, 10000)); // 10 seconds
+                    } else {
+                        console.log(`✅ Bulk create operation completed! All records processed.`);
+                    }
+
+                } catch (error) {
+                    console.error(`❌ Error checking bulk create status:`, error.message);
+                    throw error;
+                }
+            }
+
+            // Safety break - wait 1 minute before continuing
+            console.log(`🔲 Starting safety break (60 seconds)... time for a ciggarette`);
+            for (let i = 1; i <= 6; i++) {
+                await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10 seconds
+                console.log(`🚬 Safety break ${i * 10}s/60s`);
+            }
+            console.log(`✅Mmm... much better. Safety break complete, continuing...`);
+        }
+
+        return;
+
+    } catch (error) {
+        throw error;
+    }
 }
 
 /**
@@ -319,6 +540,22 @@ export async function advanceApplicationRecord(req, res) {
         return res.status(200).json(successResponse);
     } catch (error) {
         console.error(`❌ Error advancing application record:`, error.message);
+        return res.status(500).json(createErrorResponse(req, error.message));
+    }
+}
+
+// TODO: Fix this implementation. Needs to be updated to take the right params
+export async function createControlInstances(req, res) {
+    logRequest(req);
+
+    const id = req.params.id || null;
+
+    try {
+        const result = await createControlInstancesData();
+        const successResponse = createSuccessResponse(req, result);
+        return res.status(201).json(successResponse);
+    } catch (error) {
+        console.error(`❌ Error creating control instance records:`, error.message);
         return res.status(500).json(createErrorResponse(req, error.message));
     }
 }

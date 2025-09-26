@@ -58,7 +58,7 @@ async function deleteRecordById(recordId, token) {
 }
 
 async function logRecordToFile(method, recordId, recordData, suffix = '') {
-  if (LOGFILES_ENABLED) {
+  if (LOGFILES_ENABLED === true) {
     try {
       const logsDir = './logs';
       if (!fs.existsSync(logsDir)) {
