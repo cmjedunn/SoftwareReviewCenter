@@ -1,8 +1,9 @@
 import { getToken } from '../utils/getToken.js';
 import { logRequest } from '../utils/logRequest.js';
-import { getWorkflowsData } from '../workflows/workflows.controller.js';
+import { getWorkflowData, getWorkflowsData } from '../workflows/workflows.controller.js';
 import { createErrorResponse } from '../utils/createErrorResponse.js';
 import { createSuccessResponse } from '../utils/createSuccessResponse.js';
+import { getRecordV1 } from '../utils/getRecordV1.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -158,7 +159,122 @@ export async function getRecordsData(params = {}) {
   return data;
 }
 
-export async function getLinkedRecordsData(id, linkedWorkflowId = null) {
+export async function getParentRecordData(id, parentWorkflow) {
+  let token = await getToken();
+  if (!token) throw new Error('Failed to get authentication token');
+
+  const record = await getRecordsData({ id: id });
+
+  const requestUrl = `${BASE_URL}api/records/search?parent=${id}&sourceWorkflow=${record.workflow.id}&workflow=${parentWorkflow}&size=1&mapped=True`;
+  console.log(`🔍 Fetching parent record of: ${id}`);
+
+  const response = await fetch(requestUrl, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`Failed to fetch parent record: ${response.status} ${errorBody}`);
+  }
+
+  const data = await response.json();
+  console.log(`✅ Successfully retrieved parent record: ${data.id}`);
+  return data;
+}
+
+export async function updateRecordData(id, fields) {
+  let token = await getToken();
+  if (!token) throw new Error('Failed to get authentication token');
+
+  try {
+    const requestUrl = `${BASE_URL}/api/v1/records/${id}`;
+    console.log(`⬆️ Updating record: ${id}`);
+
+    const obj = {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+        'Content-Type': 'application/json',  // ← You're missing this!
+      },
+      body: JSON.stringify(fields)
+    };
+
+    const response = await fetch(requestUrl, obj);
+
+    if (!response.ok) {
+      console.warn(`⚠️  Failed to update record ${id}: HTTP ${response.status}`);
+      console.log(await response.json());
+      return null;
+    }
+    console.log(`✅ Updated record: ${id}`);
+    return await response.json();
+  } catch (error) {
+    console.warn(`⚠️  Error updating record ${id}:`, error.message);
+    return null;
+  }
+}
+
+export async function submitRecordData(id, step) {
+  let token = await getToken();
+  if (!token) throw new Error('Failed to get authentication token');
+
+  // Get record information
+  const record = await getRecordsData({ id: id });
+  const workflow = await getWorkflowData(record.workflow.id);
+  const nextStepId = (step === step.toUpperCase() && step !== step.toLowerCase()) ? step : workflow.steps.find(step => step.type === step)?.id;
+  const recordData = await getRecordV1(id, token);
+
+  // Submit record
+  console.log(`☑️  Submitting record: ${id}`);
+
+  const url = `${BASE_URL}/api/v1/records/${id}/progress/applications/${record.application.id}/workflows/${workflow.workflow.id}/steps/${nextStepId}`;
+
+  const response = await fetch(url, {
+    method: 'PUT',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(recordData)
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    console.log('❌ Submit error response:', errorBody);
+    throw new Error(`Failed to submit record: ${response.status} ${errorBody}`);
+  }
+
+  // Handle potentially empty response
+  let data;
+  const responseText = await response.text();
+
+  if (responseText.trim() === '') {
+    console.log('✅ Submit successful - empty response (normal for submit operations)');
+    data = { success: true };
+  } else {
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      console.log('✅ Submit successful - non-JSON response:', responseText);
+      data = { success: true, rawResponse: responseText };
+    }
+  }
+
+  console.log(`✅ Successfully submitted record to step: ${nextStepId}`);
+  return {
+    id: id,
+    step: nextStepId,
+    status: 'submitted',
+    record: data
+  };
+}
+
+export async function getLinkedRecordsData(id, linkedWorkflowId, applicationId = null) {
   let token = await getToken();
   if (!token) throw new Error('Failed to get authentication token');
 
@@ -179,7 +295,13 @@ export async function getLinkedRecordsData(id, linkedWorkflowId = null) {
     console.log(`🔍 Fetching linked records for all workflows`);
 
     // Get all workflows using clean function
-    const workflows = await getWorkflowsData({ size: 1000 });
+    let params;
+    if (applicationId != null)
+      params = { 'application-id': applicationId, size: 1000 };
+    else
+      params = { size: 1000 };
+
+    const workflows = await getWorkflowsData(params);
 
     for (const workflow of workflows) {
       const records = await getRecordsByWorkflow(id, workflow.id, token);
@@ -190,14 +312,27 @@ export async function getLinkedRecordsData(id, linkedWorkflowId = null) {
 
     console.log(`✅ Retrieved linked records for ${workflows.length} workflows`);
   } else {
-    console.log(`🔍 Fetching linked records for workflow: ${linkedWorkflowId}`);
+    if (Array.isArray(linkedWorkflowId)) {
+      console.log(`🔍 Fetching linked records for workflows: ${linkedWorkflowId}`);
+      let records = [];
+      for(const workflow of linkedWorkflowId){
+        records = await getRecordsByWorkflow(id, workflow, token);
+        workflowsObject[workflow] = records.map(record => ({
+        record: record
+      }));
+      }
+      console.log(`✅ Retrieved ${records.length} linked records for workflows ${linkedWorkflowId}`);
 
-    const records = await getRecordsByWorkflow(id, linkedWorkflowId, token);
-    workflowsObject[linkedWorkflowId] = records.map(record => ({
-      record: record
-    }));
+    } else {
+      console.log(`🔍 Fetching linked records for workflow: ${linkedWorkflowId}`);
+      const records = await getRecordsByWorkflow(id, linkedWorkflowId, token);
+      workflowsObject[linkedWorkflowId] = records.map(record => ({
+        record: record
+      }));
+      console.log(`✅ Retrieved ${records.length} linked records for workflow ${linkedWorkflowId}`);
 
-    console.log(`✅ Retrieved ${records.length} linked records for workflow ${linkedWorkflowId}`);
+    }
+
   }
 
   const totalLinkedRecords = Object.values(workflowsObject).reduce((sum, records) => sum + records.length, 0);
@@ -291,7 +426,7 @@ export async function deleteRecordData(id, workflowIds = []) {
         console.log(`🔍 Processing ${workflowIds.length} workflow(s) for record ${recordId}: ${workflowIds.join(', ')}`);
 
         // Get linked records using clean internal call
-        const linkedRecordsResponse = await getLinkedRecordsData(recordId);
+        const linkedRecordsResponse = await getLinkedRecordsData(recordId, workflowIds);
 
         // Extract available workflows from response
         const availableWorkflows = Object.keys(linkedRecordsResponse.linkedRecords.workflow);
@@ -453,7 +588,7 @@ export async function deleteRecordData(id, workflowIds = []) {
   });
 
   console.log(`✅ Delete operation complete - Successes: ${successCount}, Failures: ${failureCount}`);
-  
+
   return {
     records: processedRecords,
     successes: successCount,
@@ -473,6 +608,42 @@ export async function getRecords(req, res) {
     return res.json(data);
   } catch (error) {
     console.error('❌ Error getting records:', error.message);
+    return res.status(500).json(createErrorResponse(req, error.message));
+  }
+}
+
+export async function getParentRecord(req, res) {
+  logRequest(req);
+
+  try {
+    const data = await getParentRecordData(req.body);
+    return res.json(data);
+  } catch (error) {
+    console.error('❌ Error getting records:', error.message);
+    return res.status(500).json(createErrorResponse(req, error.message));
+  }
+}
+
+export async function updateRecord(req, res) {
+  logRequest(req);
+
+  try {
+    const data = await updateRecordData(req.body);
+    return res.json(data);
+  } catch (error) {
+    console.error('❌ Error getting records:', error.message);
+    return res.status(500).json(createErrorResponse(req, error.message));
+  }
+}
+
+export async function submitRecord(req, res) {
+  logRequest(req);
+
+  try {
+    const data = await submitRecordData(req.body);
+    return res.json(data);
+  } catch (error) {
+    console.error('❌ Error submitting record:', error.message);
     return res.status(500).json(createErrorResponse(req, error.message));
   }
 }

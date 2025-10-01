@@ -5,7 +5,8 @@ import { createSuccessResponse } from '../../utils/createSuccessResponse.js';
 import { getWorkflowData, getWorkflowsData } from '../../workflows/workflows.controller.js';
 import { getRecordV1 } from '../../utils/getRecordV1.js';
 import { getLinkedRecordsData, getRecordsData } from '../records.controller.js';
-import { getEnvironmentControlFrameworksData } from '../environmentRecords/environmentRecords.controller.js';
+import { getEnvironmentControlFrameworksData, getEnvironmentRecordsData } from '../environmentRecords/environmentRecords.controller.js';
+import { updateControlRecordData, submitControlRecordData } from '../controlRecords/controlRecords.controller.js';
 
 const ENV = process.env.LOGICGATE_ENV;
 const BASE_URL = `https://${ENV}.logicgate.com`;
@@ -158,7 +159,37 @@ export async function createApplicationRecordData(name, owner, description, envi
         }
     }
 
-    const linkedRecords = await getLinkedRecordsData({id: recordId});
+    let updateControlInstancesResponse;
+    let updateControlInstancesSuccessful = false;
+
+    if (createControlInstancesSuccessful) {
+        try {
+            updateControlInstancesResponse = await updateControlInstancesData(recordId);
+            updateControlInstancesSuccessful = true;
+            console.log('✅ Control instances updated successfully');
+        } catch (error) {
+            console.warn(`⚠️  Failed to update one or more control instances for application: ${recordId} - ${error.message}`);
+            // Don't throw here either since we still want to be successful if some control instances are not updated.
+        }
+    }
+
+    let submitControlInstancesResponse;
+    let submitControlInstancesSuccessful = false;
+
+    if (updateControlInstancesSuccessful) {
+        if (createControlInstancesSuccessful) {
+            try {
+                submitControlInstancesResponse = await submitControlInstancesData(updateControlInstancesResponse);
+                submitControlInstancesSuccessful = true;
+                console.log('✅ Control instances updated successfully');
+            } catch (error) {
+                console.warn(`⚠️  Failed to submit one or more control instances for application: ${recordId} - ${error.message}`);
+                // Don't throw here either since we still want to be successful if some control instances are not submitted.
+            }
+        }
+    }
+
+    const linkedRecords = await getLinkedRecordsData(recordId, null, APPLICATIONS_ID);
 
     return {
         id: recordId,
@@ -168,11 +199,8 @@ export async function createApplicationRecordData(name, owner, description, envi
         status: 'created',
         linked: linkingSuccessful,
         advanced: advancingSuccessful,
-        controlInstances: createControlInstancesResponse,
-        linkResponse: linkApplicationRecordResponse,
-        advanceResponse: advanceApplicationRecordResponse,
-        createControlInstancesResponse: createControlInstancesResponse,
-        records: linkedRecords
+        controlsCreated: createControlInstancesSuccessful && updateControlInstancesSuccessful && submitControlInstancesSuccessful,
+        linkedRecords
     };
 }
 
@@ -375,66 +403,79 @@ export async function createControlInstancesData(id, application, step, environm
 
             let bulkCreateAndLinkControlsRes;
 
+            let retryCount = 5;
+
             while (true) {
-                try {
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+                if (retryCount > 0) {
+                    try {
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
-                    bulkCreateAndLinkControlsRes = await fetch(`${BASE_URL}/api/v1/bulk-create-and-link`, {
-                        method: 'POST',
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            bulkCreateSourceId: correctSource.id,
-                            parentRecordId: id,
-                            sourceRecordIds: sourceRecordIds
-                        }),
-                        signal: controller.signal
-                    });
+                        bulkCreateAndLinkControlsRes = await fetch(`${BASE_URL}/api/v1/bulk-create-and-link`, {
+                            method: 'POST',
+                            headers: {
+                                Authorization: `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                bulkCreateSourceId: correctSource.id,
+                                parentRecordId: id,
+                                sourceRecordIds: sourceRecordIds
+                            }),
+                            signal: controller.signal
+                        });
 
-                    clearTimeout(timeoutId);
+                        clearTimeout(timeoutId);
 
-                    // If we got a response (good or bad), break out of retry loop
-                    if (!bulkCreateAndLinkControlsRes.ok) {
-                        console.warn(`⚠️ Bulk create request failed: ${bulkCreateAndLinkControlsRes.status}`);
+                        // If we got a response (bad), retry
+                        if (!bulkCreateAndLinkControlsRes.ok) {
+                            console.warn(`⚠️ Bulk create request failed: ${bulkCreateAndLinkControlsRes.status}`);
+                            console.log(`⏱️ Request timed out, retrying in ${REQUEST_TIMEOUT_MS / 1000} seconds...`);
+                            await new Promise(resolve => setTimeout(resolve, REQUEST_TIMEOUT_MS));
+                            console.log("↩️ Retrying..." + retryCount);
+                            retryCount--;
+                        } else {
+                            break;
+                        }
+
+
+                    } catch (error) {
+                        // Only retry on timeout errors
+                        if (error.name === 'AbortError' || error.code === 'ETIMEDOUT' || error.message.includes('timeout')) {
+                            console.log(`⏱️ Request timed out, retrying in 5 minutes...`);
+                            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+                            continue; // Retry
+                        } else {
+                            // For other errors, re-throw
+                            throw error;
+                        }
                     }
-                    break; // Exit retry loop
-
-                } catch (error) {
-                    // Only retry on timeout errors
-                    if (error.name === 'AbortError' || error.code === 'ETIMEDOUT' || error.message.includes('timeout')) {
-                        console.log(`⏱️ Request timed out, retrying in 5 minutes...`);
-                        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
-                        continue; // Retry
-                    } else {
-                        // For other errors, re-throw
-                        throw error;
-                    }
+                } else {
+                    throw new Error("❌ Failed to create and link control instance records.");
                 }
             }
+
+            // Safety break - wait 1 minute before continuing
+            // console.log(`🔲 Starting safety break (60 seconds)`);
+            // for (let i = 1; i <= 6; i++) {
+            //     await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10 seconds
+            //     console.log(`🚬 ${i * 10}s/60s`);
+            // }
+            // console.log(`✅ Safety break complete, continuing...`);
 
             // Poll for completion status
             let sourceRecordsRemaining = 1; // Start with non-zero to enter the loop
 
+            const applicationWorkflows = await getWorkflowsData({ 'application-id': APPLICATIONS_ID });
+            const controlInstancesWorkflow = await getWorkflowData(applicationWorkflows.find(item => item.name === "Control Instances")?.id);
+
             while (sourceRecordsRemaining > 0) {
                 try {
-                    const bulkCreateAndLinkStatusRes = await fetch(`${BASE_URL}/api/v1/bulk-create-and-link/status?parentRecordId=${id}&workflowLinkId=${controlFrameworkWorkflow.workflow.id}`, {
-                        method: 'GET',
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                            'Content-Type': 'application/json'
-                        },
-                    });
+                    // get the linked records
+                    const applicationRecord = await getLinkedRecordsData(id, [controlInstancesWorkflow.workflow.id])
+                    const linkedControls = applicationRecord.linkedRecords.workflow[controlInstancesWorkflow.workflow.id];
 
-                    if (!bulkCreateAndLinkStatusRes.ok) {
-                        console.warn(`⚠️ Status check failed: ${bulkCreateAndLinkStatusRes.status}`);
-                        throw new Error(`Status check failed with status: ${bulkCreateAndLinkStatusRes.status}`);
-                    }
-
-                    const statusData = await bulkCreateAndLinkStatusRes.json();
-                    sourceRecordsRemaining = statusData.sourceRecordsRemaining;
+                    sourceRecordsRemaining = sourceRecordIds.length - linkedControls.length;
 
                     if (sourceRecordsRemaining > 0) {
                         console.log(`📊 Records remaining: ${sourceRecordsRemaining}, checking again in 10 seconds...`);
@@ -448,14 +489,6 @@ export async function createControlInstancesData(id, application, step, environm
                     throw error;
                 }
             }
-
-            // Safety break - wait 1 minute before continuing
-            console.log(`🔲 Starting safety break (60 seconds)... time for a ciggarette`);
-            for (let i = 1; i <= 6; i++) {
-                await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10 seconds
-                console.log(`🚬 Safety break ${i * 10}s/60s`);
-            }
-            console.log(`✅Mmm... much better. Safety break complete, continuing...`);
         }
 
         return;
@@ -463,6 +496,68 @@ export async function createControlInstancesData(id, application, step, environm
     } catch (error) {
         throw error;
     }
+}
+
+export async function updateControlInstancesData(id) {
+    let token = await getToken();
+    if (!token) throw new Error('Failed to get authentication token');
+
+    console.log(`⏫ Updating security control instances for record: ${id}`);
+
+    // Get all linked control instances
+    const applicationWorkflows = await getWorkflowsData({ 'application-id': APPLICATIONS_ID });
+
+    // Get control instances workflow
+    const controlInstancesWorkflow = await getWorkflowData(applicationWorkflows.find(item => item.name === "Control Instances")?.id);
+
+    // Get environments workflow
+    const environmentsWorkflow = await getWorkflowData(applicationWorkflows.find(item => item.name === "Environments")?.id);
+
+    // get the linked records
+    const applicationRecord = await getLinkedRecordsData(id, [controlInstancesWorkflow.workflow.id, environmentsWorkflow.workflow.id])
+    const linkedControls = applicationRecord.linkedRecords.workflow[controlInstancesWorkflow.workflow.id];
+    const environment = applicationRecord.linkedRecords.workflow[environmentsWorkflow.workflow.id][0].record;
+
+    // Get control framework workflows of application. TYPE = []
+    const controlFrameworkWorkflows = await getEnvironmentControlFrameworksData(environment.id);
+    let controlFrameworkWorkflowsIds = []; // contains the ids of the selected control frameworks
+
+    for (const workflow of controlFrameworkWorkflows)
+        controlFrameworkWorkflowsIds.push(workflow.workflow.id);
+
+    let updatedControlRecords = [];
+
+    // Filter only ones not on END step
+
+    try {
+        for (const r of linkedControls) {
+            if (!(r.record.currentStep.type === "END"))
+                // For each control instance, update
+                updatedControlRecords.push(await updateControlRecordData(r.record.id, controlFrameworkWorkflowsIds, id));
+        }
+    } catch (error) {
+        console.warn(`⚠️ Failed to update control instance: ${error.message}`);
+    }
+
+    return updatedControlRecords;
+
+}
+
+export async function submitControlInstancesData(updateControlRecords) {
+    let token = await getToken();
+    if (!token) throw new Error('Failed to get authentication token');
+
+    let submittedControlRecords = [];
+
+    try {
+        for (const r of updateControlRecords) {
+            submittedControlRecords.push(await submitControlRecordData(r.id));
+        }
+    } catch (error) {
+        console.warn(`⚠️ Failed to submit control instance: ${error.message}`);
+    }
+
+    return submittedControlRecords;
 }
 
 /**
@@ -544,18 +639,49 @@ export async function advanceApplicationRecord(req, res) {
     }
 }
 
-// TODO: Fix this implementation. Needs to be updated to take the right params
 export async function createControlInstances(req, res) {
+    logRequest(req);
+
+    const { id, application, step, environment } = rew.body;
+
+    try {
+        const result = await createControlInstancesData(id, application, step, environment);
+        const successResponse = createSuccessResponse(req, result);
+        return res.status(201).json(successResponse);
+    } catch (error) {
+        console.error(`❌ Error creating control instance records:`, error.message);
+        return res.status(500).json(createErrorResponse(req, error.message));
+    }
+}
+
+export async function updateControlInstances(req, res) {
     logRequest(req);
 
     const id = req.params.id || null;
 
     try {
-        const result = await createControlInstancesData();
+        const result = await updateControlInstancesData(id);
         const successResponse = createSuccessResponse(req, result);
-        return res.status(201).json(successResponse);
+        return res.status(200).json(successResponse);
     } catch (error) {
-        console.error(`❌ Error creating control instance records:`, error.message);
+        console.error(`❌ Error updating application records:`, error.message);
+        console.error(error.stack);
+        return res.status(500).json(createErrorResponse(req, error.message));
+    }
+}
+
+export async function submitControlInstances(req, res) {
+    logRequest(req);
+
+    const updatedControlRecords = req.params.updatedControlRecords || null;
+
+    try {
+        const result = await submitControlInstancesData(updatedControlRecords);
+        const successResponse = createSuccessResponse(req, result);
+        return res.status(200).json(successResponse);
+    } catch (error) {
+        console.error(`❌ Error submitting application records:`, error.message);
+        console.error(error.stack);
         return res.status(500).json(createErrorResponse(req, error.message));
     }
 }

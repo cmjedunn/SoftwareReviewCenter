@@ -107,7 +107,7 @@ export async function getWorkflowsData(params = {}) {
 
   const data = await response.json();
   const workflows = data.content || [];
-  const results = [];
+  let results = [];
 
   for (const workflow of workflows) {
     try {
@@ -118,8 +118,14 @@ export async function getWorkflowsData(params = {}) {
     }
   }
 
-  console.log(`✅ Successfully retrieved ${results.length} workflows`);
-  return results;
+  if (params.name) {
+    const specific = await getWorkflowData(results.find(w => w.name.equals(params.name)))
+    console.log(`✅ Successfully retrieved ${results.length} workflows`);
+    return specific;
+  } else {
+    console.log(`✅ Successfully retrieved ${results.length} workflows`);
+    return results;
+  }
 }
 
 export async function getWorkflowMapsData(params = {}) {

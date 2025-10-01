@@ -21,10 +21,10 @@ export async function getEnvironmentRecordsData(id) {
 
     // Get application workflows
     const applicationWorkflows = await getWorkflowsData({ 'application-id': APPLICATIONS_ID });
-
+    
     // Get environment workflow
     const environmentWorkflow = await getWorkflowData(applicationWorkflows.find(item => item.name === "Environments")?.id);
-
+    
     // Get environment records
     return await getRecordsData({ id: id, 'workflow-id': environmentWorkflow.workflow.id, size: 1000 });
 }
@@ -36,7 +36,7 @@ export async function getEnvironmentRecordsData(id) {
  * It will compare the string with no spaces to find the best matching control workflow who's name includes the text value,
  * the lowest xpos, ypos, and also contains the word "Controls".
  * 
- * THIS MEANS PLEASE DONT F WITH THE LAYOUTS INSIDE OF LOGICGATE OR YOU WILL BREAK THINGS
+ * THIS MEANS PLEASE DONT MESS WITH OR MOVE AROUND THE LAYOUTS INSIDE OF LOGICGATE OR YOU WILL BREAK THINGS
  * 
  * AND YOU DONT WANT TO HAVE TO DELETE A WHOLE BUNCH OF RECORDS BY HAND NOW DO YOU >:(
  * 
@@ -47,39 +47,76 @@ export async function getEnvironmentControlFrameworksData(id) {
     let token = await getToken();
     if (!token) throw new Error('Failed to get authentication token');
 
-    // Get the enviornment
-    const environment = await getEnvironmentRecordsData(id);
+    try {
+        // Get the environment
+        const environment = await getEnvironmentRecordsData(id);
 
-    // Get the names of the control workflows
-    const applicableControlFrameworks = environment.fields.find(item => item.name === "Applicable Control Frameworks")?.values
+        // Get the names of the control workflows
+        const controlFrameworkField = environment.fields.find(item => item.name === "Applicable Control Frameworks");
+        const applicableControlFrameworks = controlFrameworkField?.values;
 
-    // Get control framework workflows from SCF application
-    const scfWorkflows = await getWorkflowsData({ 'application-id': SCF_ID });
-
-    let controlFrameworkWorkflows = [];
-
-    for (const cf of applicableControlFrameworks) {
-
-        const matchingWorkflows = scfWorkflows.filter(item =>
-            item.name?.includes(cf.textValue.replaceAll(" ", "")) &&
-            item.name?.includes("Controls")
-        );
-
-        if (matchingWorkflows.length > 0) {
-            // Sort by xpos first (ascending), then ypos (ascending)
-            const bestMatch = matchingWorkflows.sort((a, b) => {
-                if (a.xpos !== b.xpos) return (a.xpos || 0) - (b.xpos || 0);
-                return (a.ypos || 0) - (b.ypos || 0);
-            })[0];
-
-            console.log('📄 Control Framework Match:', bestMatch.id);
-            controlFrameworkWorkflows.push(await getWorkflowData(bestMatch.id));
-        } else {
-            controlFrameworkWorkflows.push(null);
+        // Validate the field exists and is iterable
+        if (!applicableControlFrameworks) {
+            console.warn('⚠️ Applicable Control Frameworks field not found or has no values');
+            return [];
         }
-    }
 
-    return controlFrameworkWorkflows;
+        if (!Array.isArray(applicableControlFrameworks)) {
+            console.warn('⚠️ Applicable Control Frameworks values is not an array:', typeof applicableControlFrameworks);
+            return [];
+        }
+
+        if (applicableControlFrameworks.length === 0) {
+            console.warn('⚠️ No control frameworks found in field');
+            return [];
+        }
+
+        console.log(`📋 Found ${applicableControlFrameworks.length} control frameworks to process`);
+
+        // Get control framework workflows from SCF application
+        const scfWorkflows = await getWorkflowsData({ 'application-id': SCF_ID });
+
+        if (!scfWorkflows || scfWorkflows.length === 0) {
+            console.warn('⚠️ No SCF workflows found');
+            return [];
+        }
+
+        let controlFrameworkWorkflows = [];
+
+        for (const cf of applicableControlFrameworks) {
+            if (!cf || !cf.textValue) {
+                console.warn('⚠️ Invalid control framework value:', cf);
+                controlFrameworkWorkflows.push(null);
+                continue;
+            }
+
+            const matchingWorkflows = scfWorkflows.filter(item =>
+                item.name?.includes(cf.textValue.replaceAll(" ", "")) &&
+                item.name?.includes("Controls")
+            );
+
+            if (matchingWorkflows.length > 0) {
+                // Sort by xpos first (ascending), then ypos (ascending)
+                const bestMatch = matchingWorkflows.sort((a, b) => {
+                    if (a.xpos !== b.xpos) return (a.xpos || 0) - (b.xpos || 0);
+                    return (a.ypos || 0) - (b.ypos || 0);
+                })[0];
+
+                console.log('📄 Control Framework Match:', bestMatch.id);
+                controlFrameworkWorkflows.push(await getWorkflowData(bestMatch.id));
+            } else {
+                console.warn(`⚠️ No matching workflow found for: ${cf.textValue}`);
+                controlFrameworkWorkflows.push(null);
+            }
+        }
+
+        return controlFrameworkWorkflows;
+
+    } catch (error) {
+        console.error('❌ Error in getEnvironmentControlFrameworksData:', error.message);
+        console.error('Stack trace:', error.stack);
+        throw error;
+    }
 }
 
 /**
