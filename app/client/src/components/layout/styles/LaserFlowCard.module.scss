@@ -1,0 +1,197 @@
+// LaserFlow component
+.laserFlow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 1;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+// LaserFlow overlay (used for CSS positioning)
+.laserOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 1;
+  height: 200%;
+
+}
+
+// Theme color definitions
+.theme-purple {
+  --laser-color: #8b5cf6;
+  --glow-color: #8b5cf6;
+  --glow-color-30: rgba(139, 92, 246, 0.3);
+  --glow-color-20: rgba(139, 92, 246, 0.2);
+  --accent-color: #c084fc;
+  --secondary-text-color: #ddd6fe;
+  --metric-bg-color: rgba(139, 92, 246, 0.2);
+}
+
+.theme-blue {
+  --laser-color: #3b82f6;
+  --glow-color: #3b82f6;
+  --glow-color-30: rgba(59, 130, 246, 0.3);
+  --glow-color-20: rgba(59, 130, 246, 0.2);
+  --accent-color: #60a5fa;
+  --secondary-text-color: #dbeafe;
+  --metric-bg-color: rgba(59, 130, 246, 0.2);
+}
+
+.theme-cyan {
+  --laser-color: #00ffff;
+  --glow-color: #00ffff;
+  --glow-color-30: rgba(0, 255, 255, 0.3);
+  --glow-color-20: rgba(0, 255, 255, 0.2);
+  --accent-color: #22d3ee;
+  --secondary-text-color: #cffafe;
+  --metric-bg-color: rgba(34, 211, 238, 0.2);
+}
+
+.theme-green {
+  --laser-color: #10b981;
+  --glow-color: #10b981;
+  --glow-color-30: rgba(16, 185, 129, 0.3);
+  --glow-color-20: rgba(16, 185, 129, 0.2);
+  --accent-color: #34d399;
+  --secondary-text-color: #d1fae5;
+  --metric-bg-color: rgba(16, 185, 129, 0.2);
+}
+
+.theme-red {
+  --laser-color: #ef4444;
+  --glow-color: #ef4444;
+  --glow-color-30: rgba(239, 68, 68, 0.3);
+  --glow-color-20: rgba(239, 68, 68, 0.2);
+  --accent-color: #f87171;
+  --secondary-text-color: #fecaca;
+  --metric-bg-color: rgba(239, 68, 68, 0.2);
+}
+
+.theme-orange {
+  --laser-color: #f97316;
+  --glow-color: #f97316;
+  --glow-color-30: rgba(249, 115, 22, 0.3);
+  --glow-color-20: rgba(249, 115, 22, 0.2);
+  --accent-color: #fb923c;
+  --secondary-text-color: #fed7aa;
+  --metric-bg-color: rgba(249, 115, 22, 0.2);
+}
+
+// Card component
+.card {
+  overflow: clip;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 16px;
+  border: 0px solid rgba(255, 255, 255, 0.1);
+  // backdrop-filter: blur(10px);
+  // -webkit-backdrop-filter: blur(10px);
+  box-sizing: border-box;
+  transform-origin: center;
+  will-change: transform, box-shadow;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+
+  // Default background
+  background: rgba(10, 10, 20, 0.9);
+  
+  // Default padding
+  padding: 24px;
+  
+  // Default theme colors (fallback)
+  --laser-color: #00ffff;
+  --glow-color: #00ffff;
+  --glow-color-30: rgba(0, 255, 255, 0.3);
+  --glow-color-20: rgba(0, 255, 255, 0.2);
+  --accent-color: #22d3ee;
+  --secondary-text-color: #cffafe;
+  --metric-bg-color: rgba(34, 211, 238, 0.2);
+
+  &:hover,
+  &.cardHovered {
+    transform: scale(1.02);
+    box-shadow: 
+      0 20px 40px var(--glow-color-30, rgba(0, 255, 255, 0.3)),
+      0 0 0 1px var(--glow-color-20, rgba(0, 255, 255, 0.2));
+  }
+}
+
+.cardContent {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  color: var(--accent-color, #22d3ee);
+}
+
+.description {
+  color: var(--secondary-text-color, #d1d5db);
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.metricContainer {
+  position: relative;
+  margin-top: auto; // Push to bottom
+}
+
+.metricBox {
+  background-color: var(--metric-bg-color, rgba(34, 211, 238, 0.2));
+  border-radius: 12px;
+  padding: 16px;
+  text-align: left;
+}
+
+.metricValue {
+  font-size: 1.5em;
+  font-weight: 700;
+  color: var(--accent-color, #22d3ee);
+  margin-bottom: 4px;
+}
+
+.metricLabel {
+  font-size: 0.75em;
+  color: var(--secondary-text-color, #d1d5db);
+}
+
+// Responsive sizing
+@media (max-width: 768px) {
+  .card {
+    max-width: 100%;
+    padding: 20px;
+  }
+  
+  .title {
+    font-size: 1.1rem;
+  }
+  
+  .description {
+    font-size: 13px;
+  }
+  
+  .metricValue {
+    font-size: 1.3em;
+  }
+}
+

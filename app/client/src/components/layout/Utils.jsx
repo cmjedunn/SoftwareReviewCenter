@@ -35,7 +35,7 @@ export function MainContent(props) {
 
 export function AuthContent(props) {
     return (
-        <div>
+        <>
             <AuthenticatedTemplate>
                 <div className={styles.mainContent}>{props.children}</div>
             </AuthenticatedTemplate>
@@ -43,6 +43,6 @@ export function AuthContent(props) {
                 <p><b>This content is unauthorized.</b></p>
                 <p>Please sign in with an authorized account.</p>
             </UnauthenticatedTemplate>
-        </div>
+        </>
     );
 }
