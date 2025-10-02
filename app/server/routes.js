@@ -19,7 +19,7 @@ export default function initRoutes(app) {
     // API routes
     app.use('/api/records', recordRoutes);
     app.use('/api/workflows', workflowRoutes);
-    app.use('/api/applications', applicationRecordRoutes);application
+    app.use('/api/applications', applicationRecordRoutes);
     app.use('/api/environments', environmentRoutes);
     app.use('/api/controls', controlRoutes);
     // Health
