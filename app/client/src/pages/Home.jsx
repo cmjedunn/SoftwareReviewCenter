@@ -1,43 +1,29 @@
 import { PageWrapper, MainContent, AuthContent } from '../components/layout/Utils'
 import { Card, GridCard } from '../components/layout/Card';
 import { LaserFlowCard } from '../components/layout/LaserFlow';
-import { useLoaderData } from "react-router-dom";
+import styles from './styles/Home.module.scss'
+
 
 
 export default function Home() {
-  const { resourse } = useLoaderData(); 
-
 
   return (
     <PageWrapper>
       <AuthContent>
-        <GridCard>
-          <LaserFlowCard
-            applicationName="Applications"
-            environment="Production"
-            recordCount={25}
-            theme="green"
-          // Removed explicit width/height to let grid handle sizing
-          // maxWidth="50em"
-          // maxHeight="20em"
-          />
-          <LaserFlowCard
-            applicationName="Third Parties"
-            environment="Production"
-            recordCount={18}
-            theme="orange"
-          // width="50em"
-          // height="20em"
-          />
-          <LaserFlowCard
-            applicationName="Security Reviews"
-            environment="Production"
-            recordCount={42}
-            theme="red"
-          // width="50em"
-          // height="20em"
-          />
-        </GridCard>
+        <div className={styles.dashboard}>
+          <div className={styles.col}>
+            <Card className={styles.welcome}
+              title="Welcome">
+              <p>Here is some content i dont reall want to look anything up so im just gonna type with my eyes cvlosed and see if any of this is legable at all i,, not realy sure if it will be</p>
+            </Card>
+            <LaserFlowCard
+              applicationName="Application"
+              environment="Enviornment"
+              recordCount={123}
+              theme="green"
+            />
+          </div>
+        </div>
       </AuthContent>
     </PageWrapper>
   );

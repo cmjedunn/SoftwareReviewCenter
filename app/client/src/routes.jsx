@@ -9,12 +9,12 @@ import * as applications from "./loaders/applications.loader";
 const router = createBrowserRouter([
     {
         path: "/",
-        element: <Home/>,
-        loader: applications.load_all
+        element: <Home/>
     },
     {
         path: "/applications",
-        element: <Applications/>
+        element: <Applications/>,
+        loader: applications.load_all
     },
     {
         path: "/thirdparties", 

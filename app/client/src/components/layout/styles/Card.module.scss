@@ -1,14 +1,55 @@
 .card {
   /* background: var(--color-bg-card); */
-  background-color: #17171a;
-  color: #e4e4e6;
-  border-radius: 1rem;
-  padding: 1.5rem;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.063);
-  margin-bottom: 1.5rem;
-  flex: 1;
-  width: 100%;
+  overflow: clip;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 16px;
+  border: 0px solid rgba(255, 255, 255, 0.1);
+  // backdrop-filter: blur(10px);
+  // -webkit-backdrop-filter: blur(10px);
+  box-sizing: border-box;
+  transform-origin: center;
+  will-change: transform, box-shadow;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+
+  // Default background
+  background: rgba(10, 10, 20, 0.9);
+
+  // Default padding
+  padding: 24px;
+
+  &:hover,
+  &.cardHovered {
+    transform: scale(1.01);
+  }
 }
+
+.description {
+  color: var(--secondary-text-color, #d1d5db);
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.cardContent {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  color: #ffffff;
+
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  color: inherit;
+}
+
 
 .gridCard {
   /* background: var(--color-bg-card); */
@@ -22,13 +63,15 @@
   width: 100%;
   /* 3 equal columns with proper spacing */
   grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem; /* Adds consistent spacing between cards */
-  
+  gap: 1.5rem;
+  /* Adds consistent spacing between cards */
+
   /* Ensure cards fill their grid areas properly */
-  > * {
+  >* {
     width: 100%;
     height: 100%;
-    min-width: 0; /* Prevents overflow issues */
+    min-width: 0;
+    /* Prevents overflow issues */
   }
 }
 

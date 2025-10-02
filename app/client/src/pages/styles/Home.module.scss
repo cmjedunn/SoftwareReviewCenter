@@ -1,0 +1,14 @@
+.dashboard {
+    display: grid;
+    grid-template-rows: auto atuo;
+    gap: 2em;
+    padding: 1em;
+}
+.col {
+    display: grid;
+    grid-template-columns: auto auto;
+    gap: 1em;
+}
+.welcome{
+    max-width: 20%;
+}

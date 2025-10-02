@@ -118,7 +118,7 @@
 
   &:hover,
   &.cardHovered {
-    transform: scale(1.02);
+    transform: scale(1.01);
     box-shadow: 
       0 20px 40px var(--glow-color-30, rgba(0, 255, 255, 0.3)),
       0 0 0 1px var(--glow-color-20, rgba(0, 255, 255, 0.2));
