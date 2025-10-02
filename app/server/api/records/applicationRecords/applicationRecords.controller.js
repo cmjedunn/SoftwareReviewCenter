@@ -26,8 +26,11 @@ export async function getApplicationRecordsData(id) {
     // Get enviornment workflow
     const applicationWorkflow = await getWorkflowData(applicationWorkflows.find(item => item.name === "Applications")?.id);
 
-    // Get enviornment records
-    return await getRecordsData({ id: id, 'workflow-id': applicationWorkflow.workflow.id, size: 1000 });
+    // Get application records
+    if (!id)
+        return await getRecordsData({ 'workflow-id': applicationWorkflow.workflow.id, size: 5000 });
+    else
+        return await getRecordsData({ id: id, 'workflow-id': applicationWorkflow.workflow.id, size: 1000 });
 }
 
 export async function createApplicationRecordData(name, owner, description, environment) {
@@ -564,6 +567,19 @@ export async function submitControlInstancesData(updateControlRecords) {
  * ENDPOINT FUNCTIONS
  */
 
+export async function getApplicationRecord(req, res) {
+    logRequest(req);
+
+    try {
+        const result = await getApplicationRecordsData();
+        const successResponse = createSuccessResponse(req, result);
+        return res.status(200).json(successResponse);
+    } catch (error) {
+        console.error(`❌ Error getting application records:`, error.message);
+        return res.status(500).json(createErrorResponse(req, error.message));
+    }
+}
+
 export async function getApplicationRecords(req, res) {
     logRequest(req);
 
@@ -642,7 +658,7 @@ export async function advanceApplicationRecord(req, res) {
 export async function createControlInstances(req, res) {
     logRequest(req);
 
-    const { id, application, step, environment } = rew.body;
+    const { id, application, step, environment } = req.body;
 
     try {
         const result = await createControlInstancesData(id, application, step, environment);

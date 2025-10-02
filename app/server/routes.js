@@ -19,7 +19,7 @@ export default function initRoutes(app) {
     // API routes
     app.use('/api/records', recordRoutes);
     app.use('/api/workflows', workflowRoutes);
-    app.use('/api/applications', applicationRecordRoutes);
+    app.use('/api/applications', applicationRecordRoutes);application
     app.use('/api/environments', environmentRoutes);
     app.use('/api/controls', controlRoutes);
     // Health
@@ -38,6 +38,6 @@ export default function initRoutes(app) {
 
     // Frontend catch-all for React Router (or other SPA routes).
     app.all('*splat', (req, res) => {
-        res.sendFile(path.join(__dirname, 'client', 'build', 'index.html'));
+        res.sendFile(path.join(__dirname, 'public', 'index.html'));
     });
 }

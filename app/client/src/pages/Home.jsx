@@ -5,36 +5,35 @@ import { LaserFlowCard } from '../components/layout/LaserFlow';
 export default function Home() {
 
   return (
-
     <PageWrapper>
       <AuthContent>
         <GridCard>
           <LaserFlowCard
-            applicationName="Test App"
+            applicationName="Applications"
             environment="Production"
             recordCount={25}
             theme="green"
-            maxWidth="50em"
-            maxHeight="20em"
+            // Removed explicit width/height to let grid handle sizing
+            // maxWidth="50em"
+            // maxHeight="20em"
           />
           <LaserFlowCard
-            applicationName="Test App"
+            applicationName="Third Parties"
             environment="Production"
-            recordCount={25}
+            recordCount={18}
             theme="orange"
-            width="50em"
-            height="20em"
+            // width="50em"
+            // height="20em"
           />
           <LaserFlowCard
-            applicationName="Test App"
+            applicationName="Security Reviews"
             environment="Production"
-            recordCount={25}
+            recordCount={42}
             theme="red"
-            width="50em"
-            height="20em"
+            // width="50em"
+            // height="20em"
           />
         </GridCard>
-
       </AuthContent>
     </PageWrapper>
   );

@@ -4,13 +4,13 @@ import Applications from "./pages/Applications";
 import ThirdParties from "./pages/ThirdParties";
 
 //Import the loaders for those components
-import * as resources from "./loaders/example-loader";
+import * as applications from "./loaders/applications.loader";
 
 const router = createBrowserRouter([
     {
         path: "/",
         element: <Home/>,
-        //loader: resources.load_all  
+        loader: applications.load_all
     },
     {
         path: "/applications",
