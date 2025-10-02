@@ -10,12 +10,10 @@ export async function load_one( {params} ) {
 }
 
 export async function load_all() {
-    const url = `${backend}/api/applications/`;
-    console.log('🔍 Making request to:', url);
-    const res = await fetch(`${backend}/api/applications`);
+    const res = await fetch(`${backend}/api/applications/`);
     if (!res.ok) {
         throw new Response("Failed to load resources.", { status: res.status });
     }
     const data = await res.json();
-    return { resourse: data };
+    return { resource: data }; // Changed "resourse" to "resource"
 }
