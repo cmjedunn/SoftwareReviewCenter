@@ -1,21 +1,28 @@
 .dashboard {
     display: grid;
     grid-template-rows: auto auto; // Fixed typo: 'atuo' -> 'auto'
-    gap: 2em;
-    padding: 1em;
+
 }
 
 .col {
     display: grid;
     grid-template-columns: 1fr 1fr; // Equal width columns instead of 'auto auto'
-    gap: 1em;
-    align-items: stretch; // Ensure both cards have same height
+    column-gap: 1em;
+    row-gap: 0;
+
+    margin: 0 1em 0 1em;
+
+    div {
+        margin-left: 0;
+        margin-right: 0;
+
+    }
 }
 
 .welcome {
     // Removed restrictive max-width: 20%
     min-width: 0; // Allows text to wrap properly
-    
+
     // Ensure text wrapping within the card
     p {
         word-wrap: break-word;
@@ -29,22 +36,15 @@
 @media screen and (max-width: 768px) {
     .col {
         grid-template-columns: 1fr; // Stack cards vertically on mobile
-        gap: 1.5em;
+        margin: 0 .5em 0 .5em;
     }
-    
-    .dashboard {
-        padding: 0.5em;
-        gap: 1.5em;
-    }
+
+  
 }
 
-@media screen and (max-width: 480px) {
+@media screen and (max-width: 600px) {
     .col {
-        gap: 1em;
+        margin: 0 .25em 0 .25em;
     }
-    
-    .dashboard {
-        padding: 0.25em;
-        gap: 1em;
-    }
+
 }

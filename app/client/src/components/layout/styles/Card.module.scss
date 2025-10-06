@@ -1,6 +1,5 @@
 .card {
   overflow: hidden;
-  cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 16px;
   border: 1px solid var(--color-border);
@@ -17,7 +16,7 @@
   // Default padding
   padding: 24px;
 
-
+  margin: 1em;
 }
 
 .description {
@@ -121,6 +120,7 @@
 @media screen and (max-width: 768px) {
   .card {
     padding: 20px;
+    margin: 0.5em;
   }
   
   .gridCard {
@@ -138,9 +138,10 @@
   }
 }
 
-@media screen and (max-width: 480px) {
+@media screen and (max-width: 600px) {
   .card {
     padding: 16px;
+    margin:  0.25em;
   }
   
   .gridCard {

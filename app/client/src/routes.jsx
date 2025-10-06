@@ -4,7 +4,7 @@ import Applications from "./pages/Applications";
 import ThirdParties from "./pages/ThirdParties";
 
 //Import the loaders for those components
-import * as applications from "./loaders/applications.loader";
+//import * as applications from "./loaders/applications.loader";
 
 const router = createBrowserRouter([
     {
@@ -14,7 +14,7 @@ const router = createBrowserRouter([
     {
         path: "/applications",
         element: <Applications/>,
-        loader: applications.load_all
+        // loader: applications.load_all
     },
     {
         path: "/thirdparties", 
