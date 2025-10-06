@@ -36,7 +36,6 @@
     align-items: center;
     height: 100%;
     background-color: transparent;
-    // padding-left: .75rem;
 }
 
 .dropdown {
@@ -46,8 +45,6 @@
     flex: 1;
     height: 100%;
     box-sizing: border-box;
-    // padding-right: .75rem;
-
     position: relative;
 }
 
@@ -89,14 +86,11 @@
     }
 }
 
-
 .dropdown:hover .dropbtn,
 .dropdown:hover {
     animation: fadeIn 0s ease both;
     transition: none !important;
-
 }
-
 
 /* Dropdown content (hidden by default) */
 .dropdownContent {
@@ -105,7 +99,6 @@
     top: 100%;
     right: 0;
     background-color: #e4e4e6;
-    //box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
     z-index: 1;
 }
 
@@ -123,7 +116,6 @@
     display: block;
     animation: slideDown 0.3s ease forwards;
     width: 100%;
-
 
     a {
         background: none;
@@ -155,12 +147,8 @@
             background-color: var(--color-primary);
             border-radius: 0%;
             color: var(--color-navtext);
-            // border-bottom: .1em solid var(--color-navtext);
         }
-
-
     }
-
 }
 
 .userPhoto {
@@ -173,11 +161,31 @@
     display: inline-flex;
     vertical-align: middle;
     z-index: 9999;
-    /* A high value to ensure it's on top */
 }
 
+/* Sign-In Button matching logged-in dropdown style */
 .loginButton {
     font-weight: 500;
+    color: var(--color-navtext);
+    cursor: pointer;
+    padding: 0 0.75rem; // Remove vertical padding to fill full height
+    background-color: transparent;
+    border: none;
+    font-family: inherit;
+    font-size: inherit;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%; // Full navbar height
+    transition: none !important;
+    
+    // Exact same hover style as logged-in dropdown
+    &:hover {
+        background-color: #e4e4e6;
+        color: var(--color-primary);
+        animation: fadeIn 0s ease both;
+    }
 }
 
 @media screen and (max-width: 600px) {

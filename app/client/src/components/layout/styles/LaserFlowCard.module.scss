@@ -22,10 +22,29 @@
   pointer-events: none;
   z-index: 1;
   height: 200%;
-
 }
 
-// Theme color definitions
+// Enhanced theme color definitions - now matching the navbar blue
+.theme-navbar-blue {
+  --laser-color: #004b8d;
+  --glow-color: #004b8d;
+  --glow-color-30: rgba(0, 75, 141, 0.3);
+  --glow-color-20: rgba(0, 75, 141, 0.2);
+  --accent-color: #1e5ba8;
+  --secondary-text-color: #cbd5e1;
+  --metric-bg-color: rgba(0, 75, 141, 0.15);
+}
+
+.theme-blue {
+  --laser-color: #60a5fa;
+  --glow-color: #60a5fa;
+  --glow-color-30: rgba(96, 165, 250, 0.3);
+  --glow-color-20: rgba(96, 165, 250, 0.2);
+  --accent-color: #93c5fd;
+  --secondary-text-color: #cbd5e1;
+  --metric-bg-color: rgba(96, 165, 250, 0.15);
+}
+
 .theme-purple {
   --laser-color: #8b5cf6;
   --glow-color: #8b5cf6;
@@ -34,16 +53,6 @@
   --accent-color: #c084fc;
   --secondary-text-color: #ddd6fe;
   --metric-bg-color: rgba(139, 92, 246, 0.2);
-}
-
-.theme-blue {
-  --laser-color: #3b82f6;
-  --glow-color: #3b82f6;
-  --glow-color-30: rgba(59, 130, 246, 0.3);
-  --glow-color-20: rgba(59, 130, 246, 0.2);
-  --accent-color: #60a5fa;
-  --secondary-text-color: #dbeafe;
-  --metric-bg-color: rgba(59, 130, 246, 0.2);
 }
 
 .theme-cyan {
@@ -86,42 +95,50 @@
   --metric-bg-color: rgba(249, 115, 22, 0.2);
 }
 
-// Card component
+// Enhanced card component with better integration
 .card {
-  overflow: clip;
+  overflow: hidden;
   position: relative;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 16px;
-  border: 0px solid rgba(255, 255, 255, 0.1);
-  // backdrop-filter: blur(10px);
-  // -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.1));
   box-sizing: border-box;
   transform-origin: center;
   will-change: transform, box-shadow;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-
-  // Default background
-  background: rgba(10, 10, 20, 0.9);
+  
+  // Enhanced background that matches the global theme
+  background: linear-gradient(135deg, var(--color-bg-card, rgba(10, 10, 20, 0.9)) 0%, var(--color-bg-tertiary, rgba(20, 20, 30, 0.9)) 100%);
   
   // Default padding
   padding: 24px;
   
-  // Default theme colors (fallback)
-  --laser-color: #00ffff;
-  --glow-color: #00ffff;
-  --glow-color-30: rgba(0, 255, 255, 0.3);
-  --glow-color-20: rgba(0, 255, 255, 0.2);
-  --accent-color: #22d3ee;
-  --secondary-text-color: #cffafe;
-  --metric-bg-color: rgba(34, 211, 238, 0.2);
+  // Enhanced shadow system
+  box-shadow: 
+    0 4px 12px var(--shadow-color-light, rgba(0, 0, 0, 0.15)),
+    0 1px 3px var(--shadow-color, rgba(0, 0, 0, 0.3));
+  
+  // Default theme colors (fallback) - now using navbar blue
+  --laser-color: #004b8d;
+  --glow-color: #004b8d;
+  --glow-color-30: rgba(0, 75, 141, 0.3);
+  --glow-color-20: rgba(0, 75, 141, 0.2);
+  --accent-color: #1e5ba8;
+  --secondary-text-color: #cbd5e1;
+  --metric-bg-color: rgba(0, 75, 141, 0.15);
 
   &:hover,
   &.cardHovered {
-    transform: scale(1.01);
+    transform: translateY(-2px) scale(1.01);
     box-shadow: 
-      0 20px 40px var(--glow-color-30, rgba(0, 255, 255, 0.3)),
-      0 0 0 1px var(--glow-color-20, rgba(0, 255, 255, 0.2));
+      0 8px 24px var(--glow-color-30, rgba(0, 75, 141, 0.3)),
+      0 0 0 1px var(--glow-color-20, rgba(0, 75, 141, 0.2)),
+      0 0 20px var(--glow-color-20, rgba(0, 75, 141, 0.2));
+    border-color: var(--accent-color, #1e5ba8);
+  }
+
+  &:active {
+    transform: translateY(0px) scale(0.99);
   }
 }
 
@@ -133,19 +150,20 @@
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  color: #ffffff;
-  white-space: nowrap;
+  color: var(--color-text-primary, #ffffff);
+  white-space: nowrap; // Keep this for LaserFlow cards to maintain layout
 }
 
 .title {
   font-size: 1.25rem;
   font-weight: 600;
   margin: 0 0 12px 0;
-  color: var(--accent-color, #22d3ee);
+  color: var(--accent-color, #1e5ba8);
+  line-height: 1.3;
 }
 
 .description {
-  color: var(--secondary-text-color, #d1d5db);
+  color: var(--secondary-text-color, #cbd5e1);
   margin: 0 0 16px 0;
   font-size: 14px;
   line-height: 1.4;
@@ -157,22 +175,38 @@
 }
 
 .metricBox {
-  background-color: var(--metric-bg-color, rgba(34, 211, 238, 0.2));
+  background: linear-gradient(135deg, 
+    var(--metric-bg-color, rgba(0, 75, 141, 0.15)) 0%, 
+    var(--glow-color-20, rgba(0, 75, 141, 0.2)) 100%
+  );
+  border: 1px solid var(--glow-color-20, rgba(0, 75, 141, 0.2));
   border-radius: 12px;
   padding: 16px;
   text-align: left;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: linear-gradient(135deg, 
+      var(--glow-color-20, rgba(0, 75, 141, 0.2)) 0%, 
+      var(--metric-bg-color, rgba(0, 75, 141, 0.25)) 100%
+    );
+    border-color: var(--accent-color, #1e5ba8);
+  }
 }
 
 .metricValue {
   font-size: 1.5em;
   font-weight: 700;
-  color: var(--accent-color, #22d3ee);
+  color: var(--accent-color, #1e5ba8);
   margin-bottom: 4px;
+  text-shadow: 0 0 10px var(--glow-color-20, rgba(0, 75, 141, 0.2));
 }
 
 .metricLabel {
   font-size: 0.75em;
-  color: var(--secondary-text-color, #d1d5db);
+  color: var(--secondary-text-color, #cbd5e1);
+  font-weight: 500;
 }
 
 // Responsive sizing
@@ -193,5 +227,22 @@
   .metricValue {
     font-size: 1.3em;
   }
+  
+  .metricBox {
+    padding: 14px;
+  }
 }
 
+@media (max-width: 480px) {
+  .card {
+    padding: 16px;
+  }
+  
+  .title {
+    font-size: 1rem;
+  }
+  
+  .metricBox {
+    padding: 12px;
+  }
+}

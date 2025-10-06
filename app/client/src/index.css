@@ -13,20 +13,66 @@ body {
 }
 
 :root {
-  /* Color */
-  --color-primary: #004b8d;
-  --color-secondary: #144f9c;
-  --color-primary-hover: #c5c5c5;
-  /* --color-bg: #383838; */
-  --color-bg: #17171a;/*#f2f2f3;*/
-  --color-bg-secondary: #17171a;
-  --color-bg-tertiary: #2e2e2e;
-  --color-bg-card: #242424;
-  /* --color-text: #ffffff; */
-  --color-navtext: #fff4f4;
+  /* Enhanced Blue Theme Color Palette */
+  --color-primary: #004b8d;              /* Main blue (navbar) */
+  --color-secondary: #144f9c;            /* Secondary blue */
+  --color-primary-light: #1e5ba8;        /* Lighter blue for accents */
+  --color-primary-dark: #003566;         /* Darker blue for depth */
+  --color-primary-hover: #0056a3;        /* Hover state */
+  
+  /* Blue-based Accent Colors */
+  --color-accent: #60a5fa;               /* Bright blue accent */
+  --color-accent-light: #93c5fd;         /* Light blue accent */
+  --color-accent-dark: #3b82f6;          /* Dark blue accent */
+  
+  /* Background Colors - Blue-tinted Grays */
+  --color-bg: #0f1419;                   /* Main background (blue-tinted dark) */
+  --color-bg-secondary: #1a1f2e;         /* Secondary background (blue-tinted) */
+  --color-bg-tertiary: #242b3d;          /* Tertiary background (blue-tinted) */
+  --color-bg-card: #1e2433;              /* Card backgrounds (blue-tinted) */
+  --color-bg-elevated: #2a3441;          /* Elevated elements (blue-tinted) */
+  
+  /* Sidebar Colors - Now matching the blue theme */
+  --color-sidebar-bg: #1a2332;           /* Blue-tinted sidebar background */
+  --color-sidebar-button: #242b3d;       /* Blue-tinted button background */
+  --color-sidebar-hover: #2a3441;        /* Blue-tinted hover state */
+  --color-sidebar-active: #1e5ba8;       /* Blue active state */
+  
+  /* Text Colors */
+  --color-text-primary: #ffffff;         /* Primary text (white) */
+  --color-text-secondary: #cbd5e1;       /* Secondary text (light gray) */
+  --color-text-tertiary: #94a3b8;        /* Tertiary text (medium gray) */
+  --color-text-muted: #64748b;           /* Muted text (darker gray) */
+  --color-navtext: #ffffff;              /* Navigation text */
+  --color-sidebar-text: #cbd5e1;         /* Sidebar text */
+  --color-sidebar-text-active: #ffffff;  /* Active sidebar text */
+  
+  /* Border Colors */
+  --color-border: #334155;               /* Default borders */
+  --color-border-light: #475569;         /* Light borders */
+  --color-border-accent: #60a5fa;        /* Accent borders */
+  
+  /* Status Colors - Blue-harmonized */
+  --color-success: #10b981;              /* Success green */
+  --color-warning: #f59e0b;              /* Warning orange */
+  --color-error: #ef4444;                /* Error red */
+  --color-info: #60a5fa;                 /* Info blue (matches theme) */
+  
+  /* Interactive States */
+  --color-hover: rgba(96, 165, 250, 0.1); /* Blue hover overlay */
+  --color-focus: rgba(96, 165, 250, 0.2); /* Blue focus overlay */
+  --color-active: rgba(96, 165, 250, 0.15); /* Blue active overlay */
+  
+  /* Shadow Colors */
+  --shadow-color: rgba(15, 20, 25, 0.3);  /* Blue-tinted shadows */
+  --shadow-color-light: rgba(15, 20, 25, 0.15);
+  --shadow-color-heavy: rgba(15, 20, 25, 0.5);
+  
+  /* Apply background color */
   background-color: var(--color-bg);
+  color: var(--color-text-primary);
 
-  /* Font */
+  /* Font Definitions */
   --fs-xl: 5rem;
   --fs-600: 1.5rem;
   --fs-400: 1rem;
@@ -38,16 +84,33 @@ body {
 
   font-family: var(--font-body);
   font-weight: 400;
-  color: var(--color-text);
 
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Dark theme scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent);
+}
+
 @media screen and (max-width: 600px) {
   :root {
-    /* Font */
+    /* Font scaling for mobile */
     --fs-xl: 2.5rem;
     --fs-600: .75rem;
     --fs-400: .5rem;
@@ -72,36 +135,32 @@ body {
   overflow: hidden;
 }
 
-/* a {
+/* Global link styling */
+a {
+  color: var(--color-accent);
+  text-decoration: none;
   transition: color 0.2s ease;
 }
 
 a:hover {
-  color: var(--color-primary-hover);
-} */
+  color: var(--color-accent-light);
+}
 
-
-
-
-
-/* .container {
-  display: flex;
-  align-items: baseline;
-  max-width: 900px;
-  margin: 2rem auto;
-  padding: 0.2rem 2rem;
-  background-color: var(--color-primary);
-  border-radius: 1.5rem;
-} */
-
-
-
-/* button {
-  border-radius: 8px;
-  border: transparent;
-  padding: 0.6em 1.2em;
-  background-color: transparent;
+/* Global button styling */
+button {
+  font-family: inherit;
   cursor: pointer;
-  transition: color 0.25s;
-} */
+  transition: all 0.2s ease;
+  border: none;
+  border-radius: 8px;
+}
 
+/* Focus styles for accessibility */
+button:focus-visible, 
+a:focus-visible, 
+input:focus-visible, 
+textarea:focus-visible, 
+select:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
