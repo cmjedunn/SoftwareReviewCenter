@@ -129,7 +129,7 @@
 
   &:hover,
   &.cardHovered {
-    transform: translateY(-2px) scale(1.01);
+    
     box-shadow: 
       0 8px 24px var(--glow-color-30, rgba(0, 75, 141, 0.3)),
       0 0 0 1px var(--glow-color-20, rgba(0, 75, 141, 0.2)),
@@ -186,13 +186,7 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
   transition: all 0.2s ease;
   
-  &:hover {
-    background: linear-gradient(135deg, 
-      var(--glow-color-20, rgba(0, 75, 141, 0.2)) 0%, 
-      var(--metric-bg-color, rgba(0, 75, 141, 0.25)) 100%
-    );
-    border-color: var(--accent-color, #1e5ba8);
-  }
+ 
 }
 
 .metricValue {

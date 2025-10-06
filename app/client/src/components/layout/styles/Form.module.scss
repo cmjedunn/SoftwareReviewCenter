@@ -1,0 +1,220 @@
+// GenericForm.module.scss
+// Reusable form component styles that match Security Review Center design
+
+.container {
+  max-width: 600px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: var(--color-bg-card, #242424);
+  border-radius: 16px;
+  color: #e4e4e6;
+  font-family: var(--font-body, 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif);
+  
+  // Match existing card shadow pattern
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.title {
+  margin: 0 0 2rem 0;
+  color: #ffffff;
+  text-align: center;
+  font-size: var(--fs-600, 1.5rem);
+  font-weight: 600;
+  font-family: var(--font-heading, inherit);
+}
+
+.formContent {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #d1d5db;
+  font-size: var(--fs-350, 0.9rem);
+}
+
+.required {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+// Base input styling that matches existing patterns
+.input,
+.select,
+.textarea {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: var(--color-bg-tertiary, #2e2e2e);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: var(--fs-400, 1rem);
+  font-family: inherit;
+  
+  // Smooth transitions matching existing components
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary, #004b8d);
+    box-shadow: 0 0 0 3px rgba(0, 75, 141, 0.1);
+    background-color: rgba(46, 46, 46, 1);
+  }
+
+  &::placeholder {
+    color: #9ca3af;
+  }
+
+  // Reduced motion support
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+
+.textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.helpText {
+  font-size: var(--fs-300, 0.875rem);
+  color: #9ca3af;
+  margin-top: 0.25rem;
+  line-height: 1.4;
+}
+
+.buttonGroup {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+
+  @media screen and (max-width: 480px) {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}
+
+// Button styles matching existing patterns
+.clearButton,
+.submitButton {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: var(--fs-400, 1rem);
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  
+  // Smooth transitions for interactions
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform, box-shadow;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  @media screen and (max-width: 480px) {
+    width: 100%;
+  }
+
+  // Reduced motion support
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+
+.clearButton {
+  background-color: rgba(75, 85, 99, 0.8);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+
+  &:hover:not(:disabled) {
+    background-color: rgba(75, 85, 99, 1);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(75, 85, 99, 0.3);
+  }
+}
+
+.submitButton {
+  background: linear-gradient(135deg, var(--color-primary, #004b8d) 0%, var(--color-secondary, #144f9c) 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 75, 141, 0.3);
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 75, 141, 0.4);
+  }
+
+  &.submitting {
+    background: linear-gradient(135deg, #6b7280 0%, #9ca3af 100%);
+    transform: none;
+    box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
+  }
+}
+
+// Mobile responsive design
+@media screen and (max-width: 768px) {
+  .container {
+    margin: 1rem;
+    padding: 1.5rem;
+  }
+
+  .title {
+    font-size: var(--fs-600, 1.25rem);
+  }
+
+  .formContent {
+    gap: 1.25rem;
+  }
+
+  .input,
+  .select,
+  .textarea {
+    font-size: var(--fs-350, 0.9rem);
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .container {
+    margin: 0.5rem;
+    padding: 1rem;
+  }
+
+  .formContent {
+    gap: 1rem;
+  }
+}
+
+// High contrast mode support
+@media (prefers-contrast: high) {
+  .input,
+  .select,
+  .textarea {
+    border-color: #ffffff;
+  }
+
+  .label {
+    color: #ffffff;
+  }
+}
+
+// Dark mode specific adjustments (if needed)
+@media (prefers-color-scheme: dark) {
+  .container {
+    // Already optimized for dark theme, but can add specific overrides here
+  }
+}
