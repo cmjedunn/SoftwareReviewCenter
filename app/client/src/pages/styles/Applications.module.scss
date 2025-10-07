@@ -1,0 +1,51 @@
+// Applications.module.scss
+// Clean, purpose-built styles for the Applications page
+
+.applicationsContainer {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.applicationsGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: start; // Align content to top, preventing stretching
+    margin: 1em;
+    gap: 1em;
+}
+
+.formSection {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    height: 100%;
+    gap: 1em;
+}
+
+.listSection {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    gap: 1em;
+}
+
+// Responsive design
+@media screen and (max-width: 768px) {
+    .applicationsGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .applicationsGrid .formSection .listSection {
+        margin: 0.5rem;
+        gap: 0.5em
+    }
+
+}
+
+@media screen and (max-width: 600px) {
+    .applicationsGrid .formSection .listSection {
+        margin: 0.25rem;
+        gap: 0.5em;
+    }
+}

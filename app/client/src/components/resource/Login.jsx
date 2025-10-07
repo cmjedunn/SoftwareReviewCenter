@@ -1,26 +1,28 @@
 import { useMsal, useIsAuthenticated } from "@azure/msal-react";
 import { BrowserUtils } from "@azure/msal-browser";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import styles from "./styles/Login.module.scss";
 
 export default function Login() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [userDisplayName, setUserDisplayName] = useState("");
     const [userPhotoUrl, setUserPhotoUrl] = useState("");
+    
+    // Track if we've already fetched the photo for this account
+    const photoFetchedForAccount = useRef(null);
 
     const { instance } = useMsal();
     const isAuthenticated = useIsAuthenticated();
     const account = instance.getActiveAccount();
 
-    useEffect(() => {
-        if (isAuthenticated && account) {
-            setIsLoggedIn(true);
-            setUserDisplayName(account.name || "UNKNOWN USER");
-            fetchUserPhoto();
+    const fetchUserPhoto = useCallback(async () => {
+        if (!account) return;
+        
+        // Prevent refetching for the same account
+        if (photoFetchedForAccount.current === account.homeAccountId) {
+            return;
         }
-    }, [isAuthenticated, account]);
 
-    const fetchUserPhoto = async () => {
         try {
             const tokenResponse = await instance.acquireTokenSilent({
                 scopes: ["User.Read"],
@@ -40,13 +42,38 @@ export default function Login() {
                 const photoBlob = await photoResponse.blob();
                 const photoUrl = URL.createObjectURL(photoBlob);
                 setUserPhotoUrl(photoUrl);
+                
+                // Mark this account as having photo fetched
+                photoFetchedForAccount.current = account.homeAccountId;
             } else {
                 console.warn("No profile photo found.");
+                // Still mark as fetched to prevent retries
+                photoFetchedForAccount.current = account.homeAccountId;
             }
         } catch (error) {
             console.error("Error fetching profile photo:", error);
+            // Mark as fetched to prevent continuous retries
+            photoFetchedForAccount.current = account.homeAccountId;
         }
-    };
+    }, [instance, account]);
+
+    useEffect(() => {
+        if (isAuthenticated && account) {
+            setIsLoggedIn(true);
+            setUserDisplayName(account.name || "UNKNOWN USER");
+            
+            // Only fetch photo if we haven't already fetched it for this account
+            if (photoFetchedForAccount.current !== account.homeAccountId) {
+                fetchUserPhoto();
+            }
+        } else {
+            // Reset when logged out
+            setIsLoggedIn(false);
+            setUserDisplayName("");
+            setUserPhotoUrl("");
+            photoFetchedForAccount.current = null;
+        }
+    }, [isAuthenticated, account, fetchUserPhoto]);
 
     const handleLogin = async () => {
         try {
@@ -61,7 +88,11 @@ export default function Login() {
                 instance.setActiveAccount(res.account);
                 setIsLoggedIn(true);
                 setUserDisplayName(res.account.name || "UNKNOWN USER");
-                fetchUserPhoto();
+                
+                // Only fetch photo if this is a new account
+                if (photoFetchedForAccount.current !== res.account.homeAccountId) {
+                    fetchUserPhoto();
+                }
             } else {
                 setIsLoggedIn(false);
             }
@@ -73,9 +104,16 @@ export default function Login() {
 
     const handleLogout = async () => {
         const activeAccount = instance.getActiveAccount();
+        
+        // Clean up photo URL to prevent memory leaks
+        if (userPhotoUrl) {
+            URL.revokeObjectURL(userPhotoUrl);
+        }
+        
         setIsLoggedIn(false);
         setUserDisplayName("");
         setUserPhotoUrl("");
+        photoFetchedForAccount.current = null;
 
         await instance.logoutRedirect({
             account: activeAccount,
@@ -113,8 +151,6 @@ export default function Login() {
                             <a href="https://myapps.microsoft.com/">Apps</a>
                             <a onClick={handleLogout}>Logout</a>
                         </div>
-
-
                     </div>
                 </div>
             )}

@@ -23,7 +23,7 @@ export async function getApplicationRecordsData(id) {
     // Get application workflows
     const applicationWorkflows = await getWorkflowsData({ 'application-id': APPLICATIONS_ID });
 
-    // Get enviornment workflow
+    // Get environment workflow
     const applicationWorkflow = await getWorkflowData(applicationWorkflows.find(item => item.name === "Applications")?.id);
 
     // Get application records
@@ -198,7 +198,7 @@ export async function createApplicationRecordData(name, owner, description, envi
         id: recordId,
         name: name,
         owner: owner,
-        enviornment: environment,
+        environment: environment,
         status: 'created',
         linked: linkingSuccessful,
         advanced: advancingSuccessful,
@@ -598,15 +598,15 @@ export async function getApplicationRecords(req, res) {
 export async function createApplicationRecord(req, res) {
     logRequest(req);
 
-    const { name, owner, description, enviornment } = req.body;
+    const { name, owner, description, environment } = req.body;
 
-    if (!name || !owner || !description || !enviornment) {
-        console.log('❌ Missing required parameters: Missing name, owner, description, or enviornment.');
-        return res.status(400).json(createErrorResponse(req, 'Missing name, owner, description, or enviornment', 400));
+    if (!name || !owner || !description || !environment) {
+        console.log(`❌ Missing required parameters: ${name ? "" : "name "} ${owner ? "" : "owner "} ${description ? "" : "description "} ${environment ? "" : "environment "}`);
+        return res.status(400).json(createErrorResponse(req, 'Missing name, owner, description, or environment', 400));
     }
 
     try {
-        const result = await createApplicationRecordData(name, owner, description, enviornment);
+        const result = await createApplicationRecordData(name, owner, description, environment);
         const successResponse = createSuccessResponse(req, result);
         return res.status(201).json(successResponse);
     } catch (error) {
@@ -615,18 +615,18 @@ export async function createApplicationRecord(req, res) {
     }
 }
 
-export async function linkApplicationRecordToEnviornment(req, res) {
+export async function linkApplicationRecordToEnvironment(req, res) {
     logRequest(req);
 
-    const { id, layout, enviornment } = req.body;
+    const { id, layout, environment } = req.body;
 
-    if (!id || !layout || !enviornment) {
-        console.log('❌ Missing required parameters: id, layout, or enviornment');
-        return res.status(400).json(createErrorResponse(req, 'Missing id, layout, or enviornment', 400));
+    if (!id || !layout || !environment) {
+        console.log('❌ Missing required parameters: id, layout, or environment');
+        return res.status(400).json(createErrorResponse(req, 'Missing id, layout, or environment', 400));
     }
 
     try {
-        const result = await linkApplicationRecordToEnvironmentData(id, layout, enviornment);
+        const result = await linkApplicationRecordToEnvironmentData(id, layout, environment);
         const successResponse = createSuccessResponse(req, result);
         return res.status(200).json(successResponse);
     } catch (error) {
