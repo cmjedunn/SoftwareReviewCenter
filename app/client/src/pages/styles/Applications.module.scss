@@ -2,12 +2,15 @@
 // Clean, purpose-built styles for the Applications page
 
 .applicationsContainer {
+    overflow: hidden;
     height: 100%;
     display: flex;
     flex-direction: column;
+
 }
 
 .applicationsGrid {
+    overflow: hidden;
     display: grid;
     grid-template-columns: 1fr 1fr;
     align-items: start; // Align content to top, preventing stretching
@@ -16,6 +19,7 @@
 }
 
 .formSection {
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     gap: 0;
@@ -24,6 +28,7 @@
 }
 
 .listSection {
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -32,13 +37,19 @@
 
 // Responsive design
 @media screen and (max-width: 768px) {
+
+    * {
+        overflow: auto;
+    }
+
     .applicationsGrid {
         grid-template-columns: 1fr;
     }
 
     .applicationsGrid .formSection .listSection {
         margin: 0.5rem;
-        gap: 0.5em
+        gap: 0.5em;
+
     }
 
 }

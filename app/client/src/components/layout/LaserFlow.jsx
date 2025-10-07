@@ -714,10 +714,6 @@ export const LaserFlowCard = ({
         // Use CSS transform to shift the laser effect
         laserOverlay.style.transform = `translateY(${adjustedOffset}px)`;
         
-        console.log('Card height:', cardHeight);
-        console.log('Raw offset pixels:', offsetPixels);
-        console.log('Laser natural offset:', laserNaturalOffset);
-        console.log('Adjusted offset:', adjustedOffset);
       } else if (card && laserOverlay) {
         // Reset transform if no metric box
         laserOverlay.style.transform = 'translateY(0px)';
