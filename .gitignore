@@ -3,6 +3,7 @@ app/client/dist
 # app/*/.env
 # app/*/.env.*
 app/server/public/*
+app/server/node_modules
 # app/server/token-cache/*
 app/server/logs/*
 # trusted_certs.crt
