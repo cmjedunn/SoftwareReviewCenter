@@ -78,6 +78,8 @@ body {
   --fs-400: 1rem;
   --fs-350: .75rem;
   --fs-300: .5rem;
+  --fs-250: .357rem;
+  --fs-200: .357rem;
 
   --font-heading: SegoeUI-SemiBold-final, Segoe UI Semibold, SegoeUI-Regular-final, Segoe UI, "Segoe UI Web (West European)", Segoe, -apple-system, BlinkMacSystemFont, Roboto, Helvetica Neue, Tahoma, Helvetica, Arial, sans-serif;
   --font-body: SegoeUI-Regular-final, Segoe UI, "Segoe UI Web (West European)", Segoe, -apple-system, BlinkMacSystemFont, Roboto, Helvetica Neue, Tahoma, Helvetica, Arial, sans-serif;

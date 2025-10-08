@@ -1,24 +1,33 @@
-// GenericForm.module.scss
-// Reusable form component styles that match Security Review Center design
-
-.form {
-    max-width: 100%;
+// Clean, simple FormCard styles with proper structure
+.formCard {
     height: 100%;
+    max-height: 100%;
+    padding: 0;
+
+    h3 {
+        padding: 1.5rem;
+    }
+
 }
 
-.title {
-    margin: 0 0 2rem 0;
-    color: #ffffff;
-    text-align: center;
-    font-size: var(--fs-600, 1.5rem);
-    font-weight: 600;
-    font-family: var(--font-heading, inherit);
+
+
+.form {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    //box-sizing: border-box;
+    justify-content: space-between;
+  
 }
 
 .formContent {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
+    padding: 0 1.5rem 0 1.5rem;
+    max-height: 100%;
+    
 }
 
 .fieldGroup {
@@ -30,7 +39,7 @@
     display: block;
     margin-bottom: 0.5rem;
     font-weight: 500;
-    color: #d1d5db;
+    color: var(--color-text-secondary);
     font-size: var(--fs-350, 0.9rem);
 }
 
@@ -39,168 +48,129 @@
     font-weight: 600;
 }
 
-// Base input styling that matches existing patterns
 .input,
 .select,
 .textarea {
     width: 100%;
     padding: 0.75rem;
-    background-color: var(--color-bg-tertiary, #2e2e2e);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
-    color: #ffffff;
+    background: var(--color-bg-tertiary);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    color: var(--color-text-secondary);
     font-size: var(--fs-400, 1rem);
     font-family: inherit;
-
-    // Smooth transitions matching existing components
-    &not:hover {
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
+    box-sizing: border-box;
+    // transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
     &:focus {
         outline: none;
-        border-color: var(--color-primary, #004b8d);
-        box-shadow: 0 0 0 3px rgba(0, 75, 141, 0.1);
-        background-color: rgba(46, 46, 46, 1);
+        border-color: var(--color-accent);
+        box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+        background: var(--color-bg-elevated);
     }
 
     &::placeholder {
-        color: #9ca3af;
-    }
-
-    // Reduced motion support
-    @media (prefers-reduced-motion: reduce) {
-        transition: none;
+        color: var(--color-text-tertiary);
     }
 }
 
 .textarea {
-    resize: vertical;
+    resize: none;
     line-height: 1.5;
+    min-height: 5em;
+    height: 15em;
 }
 
 .helpText {
     font-size: var(--fs-300, 0.875rem);
-    color: #9ca3af;
+    color: var(--color-text-tertiary);
     margin-top: 0.25rem;
     line-height: 1.4;
 }
 
 .buttonGroup {
+    padding: 1rem;
+    background: var(--color-bg-secondary);
+    border-top: 1px solid var(--color-border);
+
     display: flex;
     gap: 1rem;
     justify-content: flex-end;
-    margin-top: 1rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-
-    @media screen and (max-width: 480px) {
-        flex-direction: column;
-        gap: 0.75rem;
-    }
+    // margin-top: 1.5rem;
+    // padding-top: 1.5rem;
+    flex-shrink: 0;
 }
 
-// Button styles matching existing patterns
 .clearButton,
 .submitButton {
-    padding: 0.75rem 1.5rem;
-    border: none;
-    border-radius: 8px;
-    font-size: var(--fs-400, 1rem);
-    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--color-bg-tertiary);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    color: var(--color-text-secondary);
+    font-size: var(--fs-400, 1em);
     cursor: pointer;
-    font-family: inherit;
+    transition: all 0.2s ease;
 
-    // Smooth transitions for interactions
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: transform, box-shadow;
+    &:hover:not(:disabled) {
+        background: var(--color-bg-elevated);
+        border-color: var(--color-accent);
+        color: var(--color-text-primary);
+    }
 
     &:disabled {
+        opacity: 0.5;
         cursor: not-allowed;
-        opacity: 0.6;
     }
 
-    @media screen and (max-width: 480px) {
-        width: 100%;
-    }
-
-    // Reduced motion support
-    @media (prefers-reduced-motion: reduce) {
-        transition: none;
+    svg {
+        flex-shrink: 0;
     }
 }
 
-.clearButton {
-    background-color: rgba(75, 85, 99, 0.8);
-    color: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.2);
 
-    &:hover:not(:disabled) {
-        background-color: rgba(75, 85, 99, 1);
-        box-shadow: 0 4px 12px rgba(75, 85, 99, 0.3);
-    }
-}
-
-.submitButton {
-    background: linear-gradient(135deg, var(--color-primary, #004b8d) 0%, var(--color-secondary, #144f9c) 100%);
-    color: #ffffff;
-    box-shadow: 0 4px 12px rgba(0, 75, 141, 0.3);
-
-    &:hover:not(:disabled) {
-        box-shadow: 0 6px 20px rgba(0, 75, 141, 0.4);
-    }
-
-    &.submitting {
-        background: linear-gradient(135deg, #6b7280 0%, #9ca3af 100%);
-        transform: none;
-        box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
-    }
-}
-
-// Mobile responsive design
+// Mobile responsive
 @media screen and (max-width: 768px) {
-    .container {
-        margin: 1rem;
-        padding: 1.5rem;
+    .formCard{
+        height: min-content;
+    }
+    .formContainer {
+        padding: 20px;
     }
 
     .title {
         font-size: var(--fs-600, 1.25rem);
+        margin-bottom: 1rem;
     }
 
     .formContent {
         gap: 1.25rem;
     }
 
-    .input,
-    .select,
     .textarea {
-        font-size: var(--fs-350, 0.9rem);
+        max-height: 100px;
     }
 }
 
 @media screen and (max-width: 480px) {
-    .container {
-        margin: 0.5rem;
-        padding: 1rem;
+    .formContainer {
+        padding: 16px;
     }
 
-    .formContent {
-        gap: 1rem;
+    .buttonGroup {
+        flex-direction: column;
+        gap: 0.75rem;
     }
-}
 
-// High contrast mode support
-@media (prefers-contrast: high) {
+    .clearButton,
+    .submitButton {
+        width: 100%;
+    }
 
-    .input,
-    .select,
     .textarea {
-        border-color: #ffffff;
-    }
-
-    .label {
-        color: #ffffff;
+        max-height: 80px;
     }
 }

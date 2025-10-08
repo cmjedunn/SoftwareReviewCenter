@@ -8,13 +8,28 @@ const FormCard = ({
     method = "post",
     action,
     fields = [],
+    onSubmit,
     submitButtonText = "Submit",
     clearButtonText = "Clear"
 }) => {
     const handleClear = (e) => {
+        e.preventDefault();
         const form = e.target.closest('form');
         if (form) {
             form.reset();
+        }
+    };
+
+    const handleSubmit = async (e) => {
+        if (onSubmit) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            try {
+                await onSubmit(formData);
+            } catch (error) {
+                console.error('Form submission error:', error);
+                // Handle error display here if needed
+            }
         }
     };
 
@@ -55,39 +70,13 @@ const FormCard = ({
                         className={styles.select}
                         required={field.required}
                     >
-                        <option value="">Select {field.label}</option>
-                        {field.options?.map(option => (
-                            <option key={option.value} value={option.value}>
+                        <option value="">{field.placeholder || 'Select an option...'}</option>
+                        {field.options?.map((option, index) => (
+                            <option key={index} value={option.value}>
                                 {option.label}
                             </option>
                         ))}
                     </select>
-                );
-
-            case 'date':
-                return (
-                    <input
-                        type="date"
-                        name={field.name}
-                        defaultValue={field.defaultValue || ''}
-                        className={styles.input}
-                        required={field.required}
-                    />
-                );
-
-            case 'number':
-                return (
-                    <input
-                        type="number"
-                        name={field.name}
-                        defaultValue={field.defaultValue || ''}
-                        placeholder={field.placeholder || ''}
-                        min={field.min}
-                        max={field.max}
-                        step={field.step}
-                        className={styles.input}
-                        required={field.required}
-                    />
                 );
 
             case 'hidden':
@@ -95,7 +84,7 @@ const FormCard = ({
                     <input
                         type="hidden"
                         name={field.name}
-                        value={field.value || field.defaultValue || ''}
+                        value={field.value || ''}
                     />
                 );
 
@@ -114,8 +103,13 @@ const FormCard = ({
     };
 
     return (
-        <Card className={styles.form} title={title}>
-            <Form method={method} action={action}>
+        <Card className={styles.formCard} title={title}>
+            <Form 
+                method={method} 
+                action={action} 
+                onSubmit={handleSubmit}
+                className={styles.form}
+            >                
                 <div className={styles.formContent}>
                     {fields.map((field, index) => (
                         <div key={field.name || index} className={styles.fieldGroup}>
@@ -132,23 +126,22 @@ const FormCard = ({
                             )}
                         </div>
                     ))}
+                </div>
+                <div className={styles.buttonGroup}>
+                    <button
+                        type="button"
+                        onClick={handleClear}
+                        className={styles.clearButton}
+                    >
+                        {clearButtonText}
+                    </button>
 
-                    <div className={styles.buttonGroup}>
-                        <button
-                            type="button"
-                            onClick={handleClear}
-                            className={styles.clearButton}
-                        >
-                            {clearButtonText}
-                        </button>
-
-                        <button
-                            type="submit"
-                            className={styles.submitButton}
-                        >
-                            {submitButtonText}
-                        </button>
-                    </div>
+                    <button
+                        type="submit"
+                        className={styles.submitButton}
+                    >
+                        {submitButtonText}
+                    </button>
                 </div>
             </Form>
         </Card>

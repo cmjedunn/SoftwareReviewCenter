@@ -114,7 +114,7 @@ export default function ApplicationsList() {
     const currentUserEmail = account?.username; // MSAL typically stores email as username
     
     // WebGL context management
-    const MAX_VISIBLE_CARDS = 4; // Strict limit to prevent WebGL context issues
+    const MAX_VISIBLE_CARDS = 5; // Strict limit to prevent WebGL context issues
     const visibleCardsArrayRef = useRef([]); // Track order of visibility
 
     useEffect(() => {
