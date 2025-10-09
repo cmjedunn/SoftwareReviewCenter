@@ -10,17 +10,15 @@ export default function Applications() {
     <PageWrapper>
       <AuthContent>
         <div className={styles.applicationsContainer}>
-          <div className={styles.applicationsGrid}>
-            {/* Left Column - Form */}
-            <div className={styles.formSection}>
-              <Card title="Applications" />
-              <AddApplicationForm />
-            </div>
-            {/* Right Column - Applications List */}
-            <div className={styles.listSection}>
+          {/* Left Column - Form */}
+          <div className={styles.formSection}>
+            <Card title="Applications" />
+            <AddApplicationForm />
+          </div>
+          {/* Right Column - Applications List */}
+          <div className={styles.listSection}>
               <ApplicationsList />
             </div>
-          </div>
         </div>
       </AuthContent>
     </PageWrapper>

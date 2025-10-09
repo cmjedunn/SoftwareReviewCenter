@@ -3,15 +3,13 @@ import styles from './styles/Card.module.scss'
 export function Card({ title, children, className }) {
     return (
         <div className={`${styles.card} ${className || ''}`}>
-            <div className={styles.cardContent}>
-                {title && <h3 className={styles.title}>{title}</h3>}
-                {children && <div className={styles.description}>{children}</div>}
-            </div>
+            {title && <h3 className={styles.title}>{title}</h3>}
+            {children && <div className={styles.cardContent}>{children}</div>}
         </div>
     );
 }
 
-export function LoadingCard(){
+export function LoadingCard() {
     return (
         <div className={styles.card}>
             <div className={styles.cardContent}>

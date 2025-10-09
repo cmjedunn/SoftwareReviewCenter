@@ -2,59 +2,45 @@
 // Clean, purpose-built styles for the Applications page
 
 .applicationsContainer {
-    overflow: hidden;
-    height: 100%;
     display: flex;
-    flex-direction: column;
-}
-
-.applicationsGrid {
-    overflow: hidden;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr; // Explicit row sizing for desktop
-    align-items: start; // Align content to top, preventing stretching
+    flex-direction: row;
+    box-sizing: border-box;
+    flex: 1;
     margin: 1em;
     gap: 1em;
-    height: 100%; // Ensure grid takes full height
 }
 
 .formSection {
-    overflow: hidden;
+
     display: flex;
     flex-direction: column;
     gap: 1em;
-    height: 100%;
+    flex: 1;
 }
 
 .listSection {
-    overflow: hidden;
+
     display: flex;
     flex-direction: column;
-    height: 100%;
+    flex: 1;
     gap: 1em;
 }
 
 // Responsive design
-@media screen and (max-width: 768px) {
-    .applicationsGrid {
-        // grid-template-columns: 1fr;
-        // // Define explicit grid rows for mobile - form takes auto space, list takes remaining
-        // grid-template-rows: auto 1fr;
+@media screen and ((max-width: 768px) or (max-height: 600px)) {
+    .applicationsContainer {
         display: flex;
         flex-direction: column;
-        height: 100vh; // Ensure full viewport height is used
         margin: 0.5rem;
         gap: 0.5em;
     }
 
     .formSection {
-        height: 100vh; // Let form section size itself based on content
-        width: 100vw;
+        height: 100%; // Let form section size itself based on content
+        width: 100%;
         margin: 0;
         gap: 0.5em;
-        // Prevent form from growing too much
-        overflow: auto;
+
     }
 
     .listSection {
@@ -69,18 +55,18 @@
 }
 
 @media screen and (max-width: 600px) {
-    .applicationsGrid {
+    .applicationsContainer {
         margin: 0.25rem;
-        gap: 0.5em;
+        gap: 0.25em;
     }
 
     .formSection {
-        max-height: 35vh; // Slightly smaller on very small screens
-        gap: 0.5em;
+
+        gap: 0.25em;
     }
 
     .listSection {
-        min-height: 55vh; // Give more space to list on small screens
+
         gap: 0.5em;
     }
 }

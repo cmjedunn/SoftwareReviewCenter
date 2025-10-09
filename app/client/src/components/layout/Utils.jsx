@@ -5,6 +5,7 @@ import styles from "./styles/Utils.module.scss"
 import Navbar from './Navbar'
 import Sidebar from './Sidebar'
 import Footer from './Footer'
+import { Card } from "./Card";
 
 import { AuthenticatedTemplate, UnauthenticatedTemplate } from "@azure/msal-react";
 
@@ -14,15 +15,15 @@ export function PageWrapper(props) {
             <title>JE Dunn - Software Review Tool</title>
             <Navbar />
             <div className={styles.content}>
-                <span> 
+                <span>
                     <Sidebar>
-                        <Link to="/applications">Applications</Link>   
-                        <Link to="/thirdparties">Third Parties</Link>                 
+                        <Link to="/applications">Applications</Link>
+                        <Link to="/thirdparties">Third Parties</Link>
                     </Sidebar>
                 </span>
                 {props.children}
             </div>
-            <Footer />
+            {/* <Footer /> */}
         </div>
     );
 }
@@ -40,8 +41,12 @@ export function AuthContent(props) {
                 <div className={styles.mainContent}>{props.children}</div>
             </AuthenticatedTemplate>
             <UnauthenticatedTemplate>
-                <p><b>This content is unauthorized.</b></p>
-                <p>Please sign in with an authorized account.</p>
+                <div className={styles.mainContent}>
+                    <Card title="This content is unauthorized.">
+
+                        <p>Please sign in with an authorized account.</p>
+                    </Card>
+                </div>
             </UnauthenticatedTemplate>
         </>
     );

@@ -1,11 +1,11 @@
 .card {
-  
   display: flex;
-  overflow: hidden;
+  flex-direction: column;
+  // flex:1 1 0;
+  overflow: none;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 16px;
   border: 1px solid var(--color-border);
-  box-sizing: border-box;
   height: min-content;
   transform-origin: center;
   will-change: transform, box-shadow;
@@ -23,26 +23,27 @@
 }
 
 .description {
+  display: flex;
+  flex: 1;
+  height: 100%;
+  max-height: min-content;
   color: var(--color-text-secondary);
   //margin: 0 0 16px 0;
-  font-size: 14px;
+  font-size: var(--fs-350);
   line-height: 1.5;
 
   // Ensure proper text wrapping
   word-wrap: break-word;
   overflow-wrap: break-word;
   white-space: normal;
-  height: 100%;
+
 }
 
 .cardContent {
-  //position: relative;
-  z-index: 2;
-  height: 100%;
-  width: 100%;
+  flex: 1;
   display: flex;
   flex-direction: column;
-  
+
   color: var(--color-text-primary);
 
   // Remove any text wrapping restrictions
@@ -50,7 +51,7 @@
 }
 
 .title {
-  font-size: 1.25rem;
+  font-size: var(--fs-600);
   font-weight: 600;
   //margin: 0 0 12px 0;
   color: var(--color-accent-light);
@@ -64,98 +65,48 @@
 
 }
 
-.gridCard {
-  background: linear-gradient(135deg, var(--color-bg-card) 0%, var(--color-bg-elevated) 100%);
-  color: var(--color-text-primary);
-  border: 1px solid var(--color-border);
-  border-radius: 1rem;
-  padding: 1.5rem;
-  box-shadow:
-    0 4px 12px var(--shadow-color-light),
-    0 1px 3px var(--shadow-color);
-  //margin-bottom: 1.5rem;
-  display: grid;
-  width: 100%;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem;
-  transition: all 0.3s ease;
-
-
-
-  // Ensure cards fill their grid areas properly
-  >* {
-    width: 100%;
-    height: 100%;
-    min-width: 0; // Prevents overflow issues
-  }
-}
-
-// Status-specific card variants
-.card.success {
-  border-color: var(--color-success);
-
-
-}
-
-.card.warning {
-  border-color: var(--color-warning);
-
-
-}
-
-.card.error {
-  border-color: var(--color-error);
-
-
-}
-
-.card.info {
-  border-color: var(--color-info);
-
-
-}
 
 /* Responsive design for smaller screens */
-@media screen and (max-width: 1024px) {
-  .gridCard {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1.25rem;
-  }
-}
+// @media screen and (max-width: 1024px) {
+//   .gridCard {
+//     grid-template-columns: repeat(2, 1fr);
+//     gap: 1.25rem;
+//   }
+// }
 
-@media screen and (max-width: 768px) {
-  .card {
-    padding: 20px;
-    //margin: 0.5em 0 0.5em 0;
-  }
+// @media screen and (max-width: 768px) {
+//   .card {
+//     padding: 20px;
+//     //margin: 0.5em 0 0.5em 0;
+//   }
 
-  .gridCard {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-    padding: 1rem;
-  }
+//   .gridCard {
+//     grid-template-columns: 1fr;
+//     gap: 1rem;
+//     padding: 1rem;
+//   }
 
-  .title {
-    font-size: 1.1rem;
-  }
+//   .title {
+//     font-size: 1.1rem;
+//   }
 
-  .description {
-    font-size: 13px;
-  }
-}
+//   .description {
+//     font-size: 13px;
+//   }
+// }
 
-@media screen and (max-width: 600px) {
-  .card {
-    padding: 16px;
-    //margin:  0.25em 0 0.25 0;
-  }
+// @media screen and (max-width: 600px) {
+//   .card {
+//     padding: 16px;
+//     //margin:  0.25em 0 0.25 0;
+//   }
 
-  .gridCard {
-    gap: 0.75rem;
-    padding: 0.75rem;
-  }
+//   .gridCard {
+//     gap: 0.75rem;
+//     padding: 0.75rem;
+//   }
 
-  .title {
-    font-size: 1rem;
-  }
-}
+//   .title {
+//     font-size: 1rem;
+//   }
+// }

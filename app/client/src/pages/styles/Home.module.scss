@@ -1,50 +1,12 @@
-.dashboard {
-    display: grid;
-    grid-template-rows: auto auto; // Fixed typo: 'atuo' -> 'auto'
-
-}
-
-.col {
-    display: grid;
-    grid-template-columns: 1fr 1fr; // Equal width columns instead of 'auto auto'
-    column-gap: 1em;
-    row-gap: 0;
-
-    margin: 0 1em 0 1em;
-
-    div {
-        margin-left: 0;
-        margin-right: 0;
-
-    }
+.homeContainer {
+    display: flex;
+    flex-direction: row;
+    box-sizing: border-box;
+    flex: 1;
+    margin: 1em;
+    gap: 1em;
 }
 
 .welcome {
-    // Removed restrictive max-width: 20%
-    min-width: 0; // Allows text to wrap properly
-
-    // Ensure text wrapping within the card
-    p {
-        word-wrap: break-word;
-        overflow-wrap: break-word;
-        white-space: normal; // Override any nowrap from parent styles
-        line-height: 1.5; // Better readability
-    }
-}
-
-// Responsive design for better mobile experience
-@media screen and (max-width: 768px) {
-    .col {
-        grid-template-columns: 1fr; // Stack cards vertically on mobile
-        margin: 0 .5em 0 .5em;
-    }
-
-  
-}
-
-@media screen and (max-width: 600px) {
-    .col {
-        margin: 0 .25em 0 .25em;
-    }
-
+    flex: 1;
 }
