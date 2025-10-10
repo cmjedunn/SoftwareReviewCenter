@@ -1,11 +1,8 @@
 import { useState, useEffect } from 'react';
 import FormCard from '../layout/FormCard';
 
-
 export default function AddApplicationForm() {
-
     const backend = import.meta.env.VITE_BACKEND_URL || "";
-
     const [environments, setEnvironments] = useState([]);
 
     useEffect(() => {
@@ -57,41 +54,14 @@ export default function AddApplicationForm() {
         }
     ];
 
-    const handleApplicationSubmit = async (formData) => {
-        try {
-            console.log('🔄 Submitting application:', formData);
-
-            // TODO: Replace with actual API call
-            // await createApplicationRecordData(
-            //   formData.name, 
-            //   formData.owner, 
-            //   formData.description, 
-            //   formData.environment
-            // );
-
-            // Mock API call for now
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            console.log('✅ Application submitted successfully');
-            alert('Application submitted for security review!');
-
-            // Close form and potentially refresh the applications list
-
-            // TODO: Refresh the applications data
-            // window.location.reload(); // Simple refresh, or use proper state management
-
-        } catch (error) {
-            console.error('❌ Error submitting application:', error);
-            throw error; // Let the Form component handle the error display
-        }
-    };
-
     return (
         <FormCard
             title="Add Application"
+            method="post"
+            action="/applications" 
             fields={applicationFields}
-            onSubmit={handleApplicationSubmit}
             submitButtonText="Submit"
             clearButtonText="Clear Form"
-        />);
+        />
+    );
 }

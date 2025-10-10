@@ -7,7 +7,7 @@ export const msalConfig = {
   auth: {
     clientId: client, // <-- This must be set
     authority: `https://login.microsoftonline.com/${tenant}`,
-    redirectUri: 'http://localhost:3000',
+    redirectUri: window.location.origin,
   },
   cache: {
     cacheLocation: 'sessionStorage',

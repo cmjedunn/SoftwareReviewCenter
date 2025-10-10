@@ -1,1 +1,11 @@
+app/server/node_modules
 app/server/.env
+app/server/token-cache/*
+app/client/node_modules
+app/client/.env*
+app/client/.env.development
+app/client/.env.production
+.git
+app/server/logs/*
+app/server/public
+app/client/dist

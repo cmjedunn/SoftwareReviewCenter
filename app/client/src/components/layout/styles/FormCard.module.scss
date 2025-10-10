@@ -85,10 +85,10 @@
 }
 
 .textarea {
-    resize: vertical;
+    resize: none;
     line-height: 1.5;
     min-height: 5em;
-    height: min-content;
+    height: 100%;
 }
 
 .helpText {

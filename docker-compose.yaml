@@ -4,6 +4,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        # Frontend build-time variables - these get baked into the React build
+        VITE_BACKEND_URL: ""  # Empty string means relative URLs (same origin)
+        VITE_ENTRA_CLIENT_ID: "f0e2a1b0-5ff6-4b69-8dc8-4d09e4905133"
+        VITE_ENTRA_AUTHORITY: "e5e66f9b-9af2-47a3-8179-53be49b04490"
+        VITE_ENTRA_LOGOUT_REDIRECT_URI: "/"
     image: cmjedunn/jed_srcenter:latest
 
     environment:
