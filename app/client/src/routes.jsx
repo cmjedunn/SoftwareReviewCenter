@@ -4,10 +4,11 @@ import Applications from "./pages/Applications";
 import ThirdParties from "./pages/ThirdParties";
 import AddApplicationForm from "./components/resource/AddApplicationForm";
 
+// Actions
 import applicationRecordActions from "./actions/applicationRecordActions";
 
-//Import the loaders for those components
-//import * as applications from "./loaders/applications.loader";
+// Loaders
+import * as applications from "./loaders/applications.loader";
 
 const router = createBrowserRouter([
     {
@@ -24,6 +25,11 @@ const router = createBrowserRouter([
         path: "/thirdparties", 
         element: <ThirdParties/>
     },
+    {
+        path: "/applications/:id",
+        element: <Application/>,
+        loader: applications.load_one
+    }
 ]);
 
 export default router;

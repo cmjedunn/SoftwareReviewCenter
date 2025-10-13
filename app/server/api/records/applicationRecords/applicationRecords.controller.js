@@ -7,6 +7,7 @@ import { getRecordV1 } from '../../utils/getRecordV1.js';
 import { getLinkedRecordsData, getRecordsData } from '../records.controller.js';
 import { getEnvironmentControlFrameworksData } from '../environmentRecords/environmentRecords.controller.js';
 import { updateControlRecordData, submitControlRecordData } from '../controlRecords/controlRecords.controller.js';
+import { controllerLimiter } from '../../../utils/limiter.js';
 
 const ENV = process.env.LOGICGATE_ENV;
 const BASE_URL = `https://${ENV}.logicgate.com`;
@@ -33,7 +34,7 @@ export async function getApplicationRecordsData(id) {
         return await getRecordsData({ id: id, 'workflow-id': applicationWorkflow.workflow.id, size: 1000 });
 }
 
-export async function createApplicationRecordData(name, owner, description, environment) {
+export async function _createApplicationRecordInternal(name, owner, description, environment) {
     let token = await getToken();
     if (!token) throw new Error('Failed to get authentication token');
 
@@ -184,7 +185,7 @@ export async function createApplicationRecordData(name, owner, description, envi
             try {
                 submitControlInstancesResponse = await submitControlInstancesData(updateControlInstancesResponse);
                 submitControlInstancesSuccessful = true;
-                console.log('✅ Control instances updated successfully');
+                console.log('✅ Control instances submitted successfully');
             } catch (error) {
                 console.warn(`⚠️  Failed to submit one or more control instances for application: ${recordId} - ${error.message}`);
                 // Don't throw here either since we still want to be successful if some control instances are not submitted.
@@ -562,6 +563,12 @@ export async function submitControlInstancesData(updateControlRecords) {
 
     return submittedControlRecords;
 }
+
+/**
+ * RATE LIMITING
+ */
+
+export const createApplicationRecordData = controllerLimiter.wrap(_createApplicationRecordInternal);
 
 /**
  * ENDPOINT FUNCTIONS
