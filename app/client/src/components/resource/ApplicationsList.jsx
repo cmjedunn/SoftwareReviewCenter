@@ -3,28 +3,30 @@ import { useMsal } from '@azure/msal-react';
 import { Card } from '../layout/Card';
 import { LaserFlowCard } from '../layout/LaserFlow';
 import styles from './styles/ApplicationsList.module.scss';
+import { useNavigate } from 'react-router-dom';
+
 
 // Placeholder card component for non-visible items
 const PlaceholderCard = ({ application, index, onLoadAnimation, onNavigate }) => {
     const applicationName = String(application.name || `Application ${index + 1}`);
     const assignee = application.assignee?.name || 'Unassigned';
-    
+
     // Extract maturity score using same logic as main cards
-    const maturityTierField = application.fields?.find(field => 
+    const maturityTierField = application.fields?.find(field =>
         field.name === '[CALC] Current Year Average Control Maturity Tier'
     );
-    const maturityScoreField = application.fields?.find(field => 
+    const maturityScoreField = application.fields?.find(field =>
         field.name === '[CALC] Overall Control Maturity Score'
     );
-    
+
     let maturityValue = maturityTierField?.values?.[0]?.numericValue ?? maturityTierField?.values?.[0]?.textValue;
     if (maturityValue === null || maturityValue === undefined || maturityValue === 'null') {
         maturityValue = maturityScoreField?.values?.[0]?.numericValue ?? maturityScoreField?.values?.[0]?.textValue;
     }
-    
+
     const hasMaturityData = maturityValue !== null && maturityValue !== undefined && maturityValue !== 'null';
     const displayScore = hasMaturityData ? maturityValue : '0';
-    
+
     const handleClick = (e) => {
         // If Ctrl/Cmd is held, load animation instead of navigating
         if (e.ctrlKey || e.metaKey) {
@@ -33,9 +35,9 @@ const PlaceholderCard = ({ application, index, onLoadAnimation, onNavigate }) =>
             onNavigate();
         }
     };
-    
+
     return (
-        <div 
+        <div
             className={styles.placeholderCard}
             onClick={handleClick}
             style={{ minHeight: '200px' }}
@@ -64,21 +66,21 @@ const SearchBar = ({ searchTerm, onSearchChange, assignedToMeFilter, onAssignedT
                 />
                 <div className={styles.searchIcon}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <circle cx="11" cy="11" r="8"/>
-                        <path d="m21 21-4.35-4.35"/>
+                        <circle cx="11" cy="11" r="8" />
+                        <path d="m21 21-4.35-4.35" />
                     </svg>
                 </div>
             </div>
-            
+
             <div className={styles.filterRow}>
-                <button 
+                <button
                     className={`${styles.filterButton} ${assignedToMeFilter ? styles.filterActive : ''}`}
                     onClick={() => onAssignedToMeChange(!assignedToMeFilter)}
                     disabled={!currentUserEmail}
                 >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                        <circle cx="12" cy="7" r="4"/>
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
                     </svg>
                     Assigned to Me
                     {assignedToMeFilter && currentUserEmail && (
@@ -87,7 +89,7 @@ const SearchBar = ({ searchTerm, onSearchChange, assignedToMeFilter, onAssignedT
                         </span>
                     )}
                 </button>
-                
+
                 {resultCount !== undefined && (
                     <div className={styles.resultCount}>
                         {resultCount} application{resultCount !== 1 ? 's' : ''} found
@@ -107,12 +109,14 @@ export default function ApplicationsList() {
     const [visibleCards, setVisibleCards] = useState(new Set());
     const observerRef = useRef(null);
     const cardRefs = useRef(new Map());
-    
+    const navigate = useNavigate();
+
+
     // Get current user from MSAL
     const { instance } = useMsal();
     const account = instance.getActiveAccount();
     const currentUserEmail = account?.username; // MSAL typically stores email as username
-    
+
     // WebGL context management
     const MAX_VISIBLE_CARDS = 5; // Strict limit to prevent WebGL context issues
     const visibleCardsArrayRef = useRef([]); // Track order of visibility
@@ -131,56 +135,56 @@ export default function ApplicationsList() {
     // Advanced search and filter function
     const filteredApplications = useMemo(() => {
         if (!applications.length) return [];
-        
+
         let filtered = applications;
-        
+
         // Apply "assigned to me" filter first
         if (assignedToMeFilter && currentUserEmail) {
-            filtered = filtered.filter(app => 
+            filtered = filtered.filter(app =>
                 app.assignee?.email?.toLowerCase() === currentUserEmail.toLowerCase()
             );
         }
-        
+
         // Then apply text search if there's a search term
         if (searchTerm.trim()) {
             const searchLower = searchTerm.toLowerCase();
             filtered = filtered.filter(app => {
                 // Search in main application name
                 if (app.name?.toLowerCase().includes(searchLower)) return true;
-                
+
                 // Search in record name
                 if (app.recordName?.toLowerCase().includes(searchLower)) return true;
-                
+
                 // Search in status
                 if (app.status?.toLowerCase().includes(searchLower)) return true;
-                
+
                 // Search in assignee name/email
                 if (app.assignee?.name?.toLowerCase().includes(searchLower)) return true;
                 if (app.assignee?.email?.toLowerCase().includes(searchLower)) return true;
-                
+
                 // Search in creator name/email
                 if (app.creator?.name?.toLowerCase().includes(searchLower)) return true;
                 if (app.creator?.email?.toLowerCase().includes(searchLower)) return true;
-                
+
                 // Search in workflow name
                 if (app.workflow?.name?.toLowerCase().includes(searchLower)) return true;
-                
+
                 // Search in field values (like Application Name, Summary, etc.)
                 if (app.fields?.some(field => {
                     // Search field names/labels
                     if (field.name?.toLowerCase().includes(searchLower)) return true;
                     if (field.label?.toLowerCase().includes(searchLower)) return true;
-                    
+
                     // Search field values
-                    return field.values?.some(value => 
+                    return field.values?.some(value =>
                         value.textValue?.toLowerCase().includes(searchLower)
                     );
                 })) return true;
-                
+
                 return false;
             });
         }
-        
+
         return filtered;
     }, [applications, searchTerm, assignedToMeFilter, currentUserEmail]);
 
@@ -192,10 +196,10 @@ export default function ApplicationsList() {
                     setVisibleCards(prev => {
                         const currentVisibleArray = visibleCardsArrayRef.current;
                         const newVisible = new Set(prev);
-                        
+
                         entries.forEach(entry => {
                             const index = parseInt(entry.target.dataset.index);
-                            
+
                             if (entry.isIntersecting) {
                                 // Only add if under limit or if replacing an existing one
                                 if (newVisible.size < MAX_VISIBLE_CARDS) {
@@ -220,7 +224,7 @@ export default function ApplicationsList() {
                                 }
                             }
                         });
-                        
+
                         // Safety check: never exceed MAX_VISIBLE_CARDS
                         if (newVisible.size > MAX_VISIBLE_CARDS) {
                             console.warn(`WebGL safety: Visible cards (${newVisible.size}) exceeded limit (${MAX_VISIBLE_CARDS}). Removing excess.`);
@@ -234,7 +238,7 @@ export default function ApplicationsList() {
                                 }
                             });
                         }
-                        
+
                         visibleCardsArrayRef.current = currentVisibleArray;
                         return newVisible;
                     });
@@ -282,7 +286,7 @@ export default function ApplicationsList() {
     const handleCardClick = (index) => {
         setVisibleCards(prev => {
             const newVisible = new Set(prev);
-            
+
             // If already at limit, remove oldest card
             if (newVisible.size >= MAX_VISIBLE_CARDS && !newVisible.has(index)) {
                 const currentVisibleArray = visibleCardsArrayRef.current;
@@ -291,47 +295,50 @@ export default function ApplicationsList() {
                     newVisible.delete(oldestIndex);
                 }
             }
-            
+
             newVisible.add(index);
-            
+
             // Update tracking array
             if (!visibleCardsArrayRef.current.includes(index)) {
                 visibleCardsArrayRef.current.push(index);
             }
-            
+
             return newVisible;
         });
     };
 
     const handleApplicationClick = (application) => {
-        if (application.id && backend) {
-            const url = `${backend}/applications/${application.id}`;
-            window.location.href = url;
+        if (application) {
+            navigate(`/applications/${application.id}`, {
+                state: { application }
+            });
+        } else {
+            console.log('❌ No application ID');
         }
     };
 
     // Helper function to get application display data
     const getApplicationDisplayData = (app, index) => {
         const applicationName = app.name || `Application ${index + 1}`;
-        
+
         // Try both maturity fields
-        const maturityTierField = app.fields?.find(field => 
+        const maturityTierField = app.fields?.find(field =>
             field.name === '[CALC] Current Year Average Control Maturity Tier'
         );
-        const maturityScoreField = app.fields?.find(field => 
+        const maturityScoreField = app.fields?.find(field =>
             field.name === '[CALC] Overall Control Maturity Score'
         );
-        
+
         // Try tier field first, then score field
         let maturityValue = maturityTierField?.values?.[0]?.numericValue ?? maturityTierField?.values?.[0]?.textValue;
         if (maturityValue === null || maturityValue === undefined || maturityValue === 'null') {
             maturityValue = maturityScoreField?.values?.[0]?.numericValue ?? maturityScoreField?.values?.[0]?.textValue;
         }
-        
+
         // Check if we have valid maturity data
         const hasMaturityData = maturityValue !== null && maturityValue !== undefined && maturityValue !== 'null';
         const displayScore = hasMaturityData ? maturityValue : '0';
-        
+
         // Determine theme based on workflow status AND data quality
         let theme = 'blue'; // Default
         if (app.currentStep?.type === 'ORIGIN') {
@@ -345,7 +352,7 @@ export default function ApplicationsList() {
         } else if (app.currentStep?.type) {
             theme = 'blue'; // Blue for in-progress with data
         }
-        
+
         return { applicationName, maturityScore: displayScore, theme };
     };
 
@@ -371,7 +378,7 @@ export default function ApplicationsList() {
 
     return (
         <Card className={styles.card}>
-            <SearchBar 
+            <SearchBar
                 searchTerm={searchTerm}
                 onSearchChange={setSearchTerm}
                 assignedToMeFilter={assignedToMeFilter}
@@ -379,21 +386,21 @@ export default function ApplicationsList() {
                 resultCount={filteredApplications.length}
                 currentUserEmail={currentUserEmail}
             />
-            
+
             <div className={styles.list}>
                 {filteredApplications.length === 0 ? (
                     <div className={styles.noResults}>
                         <p>
-                            {assignedToMeFilter && searchTerm 
+                            {assignedToMeFilter && searchTerm
                                 ? `No applications assigned to you match "${searchTerm}"`
-                                : assignedToMeFilter 
+                                : assignedToMeFilter
                                     ? "No applications assigned to you"
                                     : searchTerm
                                         ? `No applications found matching "${searchTerm}"`
                                         : "No applications found"
                             }
                         </p>
-                        <button 
+                        <button
                             onClick={() => {
                                 setSearchTerm('');
                                 setAssignedToMeFilter(false);
@@ -409,13 +416,13 @@ export default function ApplicationsList() {
                         const isVisible = visibleCards.has(index);
 
                         return (
-                            <div 
+                            <div
                                 key={application.id || `${application.name}-${index}`}
                                 ref={(el) => setCardRef(el, index)}
                                 data-index={index}
                             >
                                 {isVisible ? (
-                                    <LaserFlowCard 
+                                    <LaserFlowCard
                                         title={applicationName}
                                         description={`Assigned to ${application.assignee?.name || 'Unassigned'}`}
                                         metricValue={maturityScore}
@@ -425,7 +432,7 @@ export default function ApplicationsList() {
                                         style={{ cursor: 'pointer' }}
                                     />
                                 ) : (
-                                    <PlaceholderCard 
+                                    <PlaceholderCard
                                         application={application}
                                         index={index}
                                         onLoadAnimation={() => handleCardClick(index)}

@@ -565,6 +565,7 @@ export const LaserFlowCard = ({
   description,
   metricValue,
   metricLabel,
+  onClick,
   // Application record specific props
   applicationName,
   environment,
@@ -610,7 +611,7 @@ export const LaserFlowCard = ({
   // Determine what to display (must come before useEffect)
   const displayTitle = applicationName || title;
   const displayDescription = environment || description;
-  const displayMetricValue = recordCount !== undefined 
+  const displayMetricValue = recordCount !== undefined
     ? (typeof recordCount === 'number' ? recordCount.toLocaleString() : recordCount)
     : metricValue;
   const displayMetricLabel = recordCount !== undefined ? "Controls" : metricLabel;
@@ -705,15 +706,15 @@ export const LaserFlowCard = ({
         // Calculate how much to shift the laser overlay down
         const offsetPixels = metricRect.top - cardRect.top;
         const cardHeight = cardRect.height;
-        
+
         // The laser beam appears roughly in the center/upper portion of the overlay
         // Increase the natural offset to move the laser UP
         const laserNaturalOffset = cardHeight * .995; // Try 50% instead of 40%
         const adjustedOffset = offsetPixels - laserNaturalOffset;
-        
+
         // Use CSS transform to shift the laser effect
         laserOverlay.style.transform = `translateY(${adjustedOffset}px)`;
-        
+
       } else if (card && laserOverlay) {
         // Reset transform if no metric box
         laserOverlay.style.transform = 'translateY(0px)';
@@ -732,7 +733,7 @@ export const LaserFlowCard = ({
 
   // Build theme class name safely
   const themeClass = styles[`theme-${theme}`];
-  
+
   return (
     <div
       ref={cardRef}
@@ -740,6 +741,9 @@ export const LaserFlowCard = ({
       style={combinedStyles}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onClick={onClick}  // ✅ ADD THIS LINE - Forward the onClick prop
+      role="button"      // ✅ Optional: Add for accessibility
+      tabIndex={0}       // ✅ Optional: Make it keyboard focusable
     >
       {/* LaserFlow Effect Overlay */}
       <LaserFlow
@@ -761,7 +765,7 @@ export const LaserFlowCard = ({
       <div className={styles.cardContent}>
         {displayTitle && <h3 className={styles.title}>{displayTitle}</h3>}
         {displayDescription && <p className={styles.description}>{displayDescription}</p>}
-        
+
         {(displayMetricValue !== undefined || displayMetricLabel) && (
           <div className={styles.metricContainer}>
             <div className={styles.metricBox} data-metric-box="true">

@@ -1,4 +1,155 @@
+// Application.module.scss
+// Styles for the individual application page
+
 .appCard {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    min-height: 70vh;
+}
+
+.applicationContent {
     flex: 1;
-    margin: 1em;
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem;
+    gap: 1.5rem;
+}
+
+.applicationHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--color-border);
+    gap: 2rem;
+}
+
+.applicationInfo {
+    flex: 1;
+    
+    h2 {
+        margin: 0 0 1rem 0;
+        color: var(--color-text-primary);
+        font-size: var(--fs-600, 1.5rem);
+        font-weight: 600;
+    }
+
+    p {
+        margin: 0.5rem 0;
+        color: var(--color-text-secondary);
+        font-size: var(--fs-400, 1rem);
+        
+        strong {
+            color: var(--color-text-primary);
+            font-weight: 500;
+        }
+    }
+}
+
+.applicationActions {
+    flex-shrink: 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+}
+
+.applicationDetails {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.detailSection {
+    h3 {
+        margin: 0 0 1rem 0;
+        color: var(--color-text-primary);
+        font-size: var(--fs-500, 1.25rem);
+        font-weight: 600;
+        border-bottom: 2px solid var(--color-accent);
+        padding-bottom: 0.5rem;
+    }
+}
+
+.detailRow {
+    display: flex;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--color-border-light, rgba(255, 255, 255, 0.05));
+    gap: 1rem;
+
+    &:last-child {
+        border-bottom: none;
+    }
+}
+
+.detailLabel {
+    flex-shrink: 0;
+    min-width: 150px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    font-size: var(--fs-400, 1rem);
+}
+
+.detailValue {
+    flex: 1;
+    color: var(--color-text-primary);
+    font-size: var(--fs-400, 1rem);
+    word-break: break-word;
+}
+
+.debugSection {
+    margin-top: 2rem;
+    
+    summary {
+        cursor: pointer;
+        color: var(--color-text-tertiary);
+        font-size: var(--fs-350, 0.875rem);
+        margin-bottom: 0.5rem;
+        
+        &:hover {
+            color: var(--color-text-secondary);
+        }
+    }
+}
+
+// Mobile responsive
+@media screen and (max-width: 768px) {
+    .applicationHeader {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+
+    .applicationActions {
+        align-self: flex-end;
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    .detailRow {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .detailLabel {
+        min-width: unset;
+        font-size: var(--fs-350, 0.875rem);
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .applicationContent {
+        padding: 1rem;
+        gap: 1rem;
+    }
+
+    .applicationActions {
+        width: 100%;
+        
+        // Make delete button full width on small screens
+        button {
+            width: 100%;
+            justify-content: center;
+        }
+    }
 }

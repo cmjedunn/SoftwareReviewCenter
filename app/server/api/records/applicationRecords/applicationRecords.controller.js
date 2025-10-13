@@ -2,9 +2,9 @@ import { getToken } from '../../utils/getToken.js';
 import { logRequest } from '../../utils/logRequest.js';
 import { createErrorResponse } from '../../utils/createErrorResponse.js';
 import { createSuccessResponse } from '../../utils/createSuccessResponse.js';
-import { getWorkflowData, getWorkflowsData } from '../../workflows/workflows.controller.js';
+import { getWorkflowData, getWorkflows, getWorkflowsData } from '../../workflows/workflows.controller.js';
 import { getRecordV1 } from '../../utils/getRecordV1.js';
-import { getLinkedRecordsData, getRecordsData } from '../records.controller.js';
+import { deleteRecordData, getLinkedRecordsData, getRecordsData } from '../records.controller.js';
 import { getEnvironmentControlFrameworksData } from '../environmentRecords/environmentRecords.controller.js';
 import { updateControlRecordData, submitControlRecordData } from '../controlRecords/controlRecords.controller.js';
 import { controllerLimiter } from '../../../utils/limiter.js';
@@ -32,6 +32,21 @@ export async function getApplicationRecordsData(id) {
         return await getRecordsData({ 'workflow-id': applicationWorkflow.workflow.id, size: 5000 });
     else
         return await getRecordsData({ id: id, 'workflow-id': applicationWorkflow.workflow.id, size: 1000 });
+}
+
+export async function deleteApplicationRecordData(id) {
+    let token = await getToken();
+    if (!token) throw new Error('Failed to get authentication token');
+
+    // Get application workflows
+    const applicationWorkflows = await getWorkflowsData({ 'application-id': APPLICATIONS_ID });
+
+    // Get Control Instances workflow
+    const controlInstancesWorkflow = await getWorkflowData(applicationWorkflows.find(item => item.name === "Control Instances")?.id);
+
+    // Delete application records
+    return await deleteRecordData(id, [controlInstancesWorkflow.workflow.id]);
+
 }
 
 export async function _createApplicationRecordInternal(name, owner, description, environment) {
@@ -583,6 +598,20 @@ export async function getApplicationRecord(req, res) {
         return res.status(200).json(successResponse);
     } catch (error) {
         console.error(`❌ Error getting application records:`, error.message);
+        return res.status(500).json(createErrorResponse(req, error.message));
+    }
+}
+
+export async function deleteApplicationRecord(req, res) {
+    logRequest(req);
+
+    try {
+        const { id } = req.params;
+        const result = await deleteApplicationRecordData(id);
+        const successResponse = createSuccessResponse(req, result);
+        return res.status(200).json(successResponse);
+    } catch (error) {
+        console.error(`❌ Error deleting application record:`, error.message);
         return res.status(500).json(createErrorResponse(req, error.message));
     }
 }

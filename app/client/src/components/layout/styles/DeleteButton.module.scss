@@ -1,0 +1,123 @@
+.deleteButton {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--color-bg-tertiary);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    color: var(--color-text-secondary);
+    font-size: var(--fs-400, 1em);
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover:not(:disabled) {
+        background: rgba(239, 68, 68, 0.1); // Red tint on hover
+        border-color: #ef4444;
+        color: #ef4444;
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    svg {
+        flex-shrink: 0;
+    }
+}
+
+.confirmationGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    border-left: 4px solid #ef4444; // Red accent border
+}
+
+.confirmationText {
+    margin: 0;
+    color: var(--color-text-primary);
+    font-size: var(--fs-400, 1rem);
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+.confirmationButtons {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    margin-top: 0.25rem;
+}
+
+.cancelButton {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--color-bg-tertiary);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    color: var(--color-text-secondary);
+    font-size: var(--fs-400, 1em);
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover:not(:disabled) {
+        background: var(--color-bg-elevated);
+        border-color: var(--color-accent);
+        color: var(--color-text-primary);
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+}
+
+.confirmDeleteButton {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: #ef4444;
+    border: 1px solid #ef4444;
+    border-radius: 6px;
+    color: white;
+    font-size: var(--fs-400, 1em);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover:not(:disabled) {
+        background: #dc2626;
+        border-color: #dc2626;
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    svg {
+        flex-shrink: 0;
+    }
+}
+
+// Mobile responsive - match FormCard pattern
+@media screen and (max-width: 480px) {
+    .confirmationButtons {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .cancelButton,
+    .confirmDeleteButton,
+    .deleteButton {
+        width: 100%;
+        justify-content: center;
+    }
+}

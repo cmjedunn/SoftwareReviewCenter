@@ -1,35 +1,35 @@
 import { createBrowserRouter } from "react-router-dom";
 import Home from "./pages/Home";
 import Applications from "./pages/Applications";
+import Application from "./pages/Application";
 import ThirdParties from "./pages/ThirdParties";
-import AddApplicationForm from "./components/resource/AddApplicationForm";
 
 // Actions
 import applicationRecordActions from "./actions/applicationRecordActions";
 
 // Loaders
-import * as applications from "./loaders/applications.loader";
+//import * as applications from "./loaders/applications.loader";
 
 const router = createBrowserRouter([
     {
         path: "/",
-        element: <Home/>
+        element: <Home />
     },
     {
         path: "/applications",
-        element: <Applications/>,
+        element: <Applications />,
         action: applicationRecordActions.create
         // loader: applications.load_all
     },
     {
-        path: "/thirdparties", 
-        element: <ThirdParties/>
+        path: "/applications/:id",
+        element: <Application />,
     },
     {
-        path: "/applications/:id",
-        element: <Application/>,
-        loader: applications.load_one
-    }
+        path: "/thirdparties",
+        element: <ThirdParties />
+    },
+
 ]);
 
 export default router;
