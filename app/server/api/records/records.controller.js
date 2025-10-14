@@ -4,6 +4,8 @@ import { getWorkflowData, getWorkflowsData } from '../workflows/workflows.contro
 import { createErrorResponse } from '../utils/createErrorResponse.js';
 import { createSuccessResponse } from '../utils/createSuccessResponse.js';
 import { getRecordV1 } from '../utils/getRecordV1.js';
+import { controllerLimiter } from '../../utils/limiter.js';
+
 import fs from 'fs';
 import path from 'path';
 
@@ -274,7 +276,7 @@ export async function submitRecordData(id, step) {
   };
 }
 
-export async function getLinkedRecordsData(id, linkedWorkflowId, applicationId = null) {
+export async function _getLinkedRecordsInternal(id, linkedWorkflowId, applicationId = null) {
   let token = await getToken();
   if (!token) throw new Error('Failed to get authentication token');
 
@@ -595,6 +597,13 @@ export async function deleteRecordData(id, workflowIds = []) {
     failures: failureCount
   };
 }
+
+/**
+ * RATE LIMITING
+ */
+
+export const getLinkedRecordsData = controllerLimiter.wrap(_getLinkedRecordsInternal);
+
 
 /**
  * ENDPOINT FUNCTIONS

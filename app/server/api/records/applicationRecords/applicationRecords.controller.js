@@ -34,7 +34,7 @@ export async function getApplicationRecordsData(id) {
         return await getRecordsData({ id: id, 'workflow-id': applicationWorkflow.workflow.id, size: 1000 });
 }
 
-export async function deleteApplicationRecordData(id) {
+export async function _deleteApplicationRecordInternal(id) {
     let token = await getToken();
     if (!token) throw new Error('Failed to get authentication token');
 
@@ -584,6 +584,8 @@ export async function submitControlInstancesData(updateControlRecords) {
  */
 
 export const createApplicationRecordData = controllerLimiter.wrap(_createApplicationRecordInternal);
+
+export const deleteApplicationRecordData = controllerLimiter.wrap(_deleteApplicationRecordInternal);
 
 /**
  * ENDPOINT FUNCTIONS
