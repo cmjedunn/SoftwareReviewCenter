@@ -2,12 +2,14 @@ import { getToken } from '../../utils/getToken.js';
 import { logRequest } from '../../utils/logRequest.js';
 import { createErrorResponse } from '../../utils/createErrorResponse.js';
 import { createSuccessResponse } from '../../utils/createSuccessResponse.js';
-import { getWorkflowData, getWorkflows, getWorkflowsData } from '../../workflows/workflows.controller.js';
+import { getWorkflowData, getWorkflowsData } from '../../workflows/workflows.controller.js';
 import { getRecordV1 } from '../../utils/getRecordV1.js';
 import { deleteRecordData, getLinkedRecordsData, getRecordsData } from '../records.controller.js';
 import { getEnvironmentControlFrameworksData } from '../environmentRecords/environmentRecords.controller.js';
 import { updateControlRecordData, submitControlRecordData } from '../controlRecords/controlRecords.controller.js';
 import { controllerLimiter } from '../../../utils/limiter.js';
+import { JobManager } from '../../../services/jobManager.js';
+
 
 const ENV = process.env.LOGICGATE_ENV;
 const BASE_URL = `https://${ENV}.logicgate.com`;
@@ -609,11 +611,24 @@ export async function deleteApplicationRecord(req, res) {
 
     try {
         const { id } = req.params;
-        const result = await deleteApplicationRecordData(id);
-        const successResponse = createSuccessResponse(req, result);
-        return res.status(200).json(successResponse);
+        
+        const jobManager = JobManager.getInstance();
+        const jobId = jobManager.createJob('deleteApplicationRecord', {
+            recordId: id
+        });
+
+        const successResponse = createSuccessResponse(req, {
+            jobId,
+            status: 'queued',
+            message: 'Application record deletion queued. Connect to WebSocket for updates.',
+            websocketUrl: '/ws'
+        });
+
+        console.log(`✅ Queued application record deletion as job ${jobId}`);
+        return res.status(202).json(successResponse);
+        
     } catch (error) {
-        console.error(`❌ Error deleting application record:`, error.message);
+        console.error(`❌ Error queueing application record deletion:`, error.message);
         return res.status(500).json(createErrorResponse(req, error.message));
     }
 }
@@ -639,16 +654,33 @@ export async function createApplicationRecord(req, res) {
     const { name, owner, description, environment } = req.body;
 
     if (!name || !owner || !description || !environment) {
-        console.log(`❌ Missing required parameters: ${name ? "" : "name "} ${owner ? "" : "owner "} ${description ? "" : "description "} ${environment ? "" : "environment "}`);
+        console.log(`❌ Missing required parameters`);
         return res.status(400).json(createErrorResponse(req, 'Missing name, owner, description, or environment', 400));
     }
 
     try {
-        const result = await createApplicationRecordData(name, owner, description, environment);
-        const successResponse = createSuccessResponse(req, result);
-        return res.status(201).json(successResponse);
+        // Create job instead of processing directly
+        const jobManager = JobManager.getInstance();
+        const jobId = jobManager.createJob('createApplicationRecord', {
+            name,
+            owner,
+            description,
+            environment
+        });
+
+        // Return job ID immediately
+        const successResponse = createSuccessResponse(req, {
+            jobId,
+            status: 'queued',
+            message: 'Application record creation queued. Connect to WebSocket for updates.',
+            websocketUrl: '/ws'
+        });
+
+        console.log(`✅ Queued application record creation as job ${jobId}`);
+        return res.status(202).json(successResponse); // 202 = Accepted (processing async)
+        
     } catch (error) {
-        console.error(`❌ Error creating application record:`, error.message);
+        console.error(`❌ Error queueing application record creation:`, error.message);
         return res.status(500).json(createErrorResponse(req, error.message));
     }
 }
@@ -736,6 +768,43 @@ export async function submitControlInstances(req, res) {
     } catch (error) {
         console.error(`❌ Error submitting application records:`, error.message);
         console.error(error.stack);
+        return res.status(500).json(createErrorResponse(req, error.message));
+    }
+}
+
+export async function getJobStatus(req, res) {
+    logRequest(req);
+
+    try {
+        const { jobId } = req.params;
+        const jobManager = JobManager.getInstance();
+        const status = jobManager.getJobStatus(jobId);
+
+        if (!status) {
+            return res.status(404).json(createErrorResponse(req, 'Job not found', 404));
+        }
+
+        const successResponse = createSuccessResponse(req, status);
+        return res.status(200).json(successResponse);
+        
+    } catch (error) {
+        console.error(`❌ Error getting job status:`, error.message);
+        return res.status(500).json(createErrorResponse(req, error.message));
+    }
+}
+
+export async function getQueueStatus(req, res) {
+    logRequest(req);
+
+    try {
+        const jobManager = JobManager.getInstance();
+        const status = jobManager.getQueueStatus();
+
+        const successResponse = createSuccessResponse(req, status);
+        return res.status(200).json(successResponse);
+        
+    } catch (error) {
+        console.error(`❌ Error getting queue status:`, error.message);
         return res.status(500).json(createErrorResponse(req, error.message));
     }
 }
