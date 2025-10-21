@@ -74,7 +74,8 @@ export async function getEnvironmentControlFrameworksData(id) {
         console.log(`📋 Found ${applicableControlFrameworks.length} control frameworks to process`);
 
         // Get control framework workflows from SCF application
-        const scfWorkflows = await getWorkflowsData({ 'application-id': SCF_ID });
+        const scfWorkflows = await getWorkflowsData({ 'application-id': SCF_ID, 'size': 1000});
+
 
         if (!scfWorkflows || scfWorkflows.length === 0) {
             console.warn('⚠️ No SCF workflows found');
