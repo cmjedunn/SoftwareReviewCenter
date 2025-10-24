@@ -3,6 +3,7 @@ import { Card } from '../components/layout/Card';
 import styles from './styles/Applications.module.scss'; // Use dedicated Applications styles
 import AddApplicationForm from '../components/resource/AddApplicationForm';
 import ApplicationsList from '../components/resource/ApplicationsList';
+import { SuccessNotificationCard } from '../components/resource/NotificationCard';
 
 export default function Applications() {
 
@@ -18,6 +19,7 @@ export default function Applications() {
           {/* Right Column - Applications List */}
           <div className={styles.listSection}>
               <ApplicationsList />
+              <SuccessNotificationCard>Success</SuccessNotificationCard>
             </div>
         </div>
       </AuthContent>

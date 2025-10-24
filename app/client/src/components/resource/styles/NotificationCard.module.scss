@@ -1,0 +1,15 @@
+.notificationCard{
+    display: flex;
+    max-width: 100%;
+    color: var(--color-text-primary);
+    font-size: var(--fs-350);
+    padding: 1em;
+}
+
+.successNotificationCard{
+    background: var(--color-success);
+}
+
+.errorNotificationCard{
+    background: var(--color-error);
+}
