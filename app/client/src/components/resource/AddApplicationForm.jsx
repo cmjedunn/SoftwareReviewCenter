@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import FormCard from '../layout/FormCard';
 
-export default function AddApplicationForm() {
+export default function AddApplicationForm({ onJobStarted = () => { } }) {
     const backend = import.meta.env.VITE_BACKEND_URL || "";
+
     const [environments, setEnvironments] = useState([]);
 
     useEffect(() => {
@@ -14,6 +15,35 @@ export default function AddApplicationForm() {
             })
             .catch(console.error);
     }, [backend]);
+
+    const handleFormSubmit = async (formData) => {
+        const applicationData = {
+            name: formData.get('name'),
+            owner: formData.get('owner'),
+            description: formData.get('description'),
+            environment: formData.get('environment')
+        };
+
+        //console.log('🚀 Submitting application data:', applicationData);
+
+        const response = await fetch(`${backend}/api/applications`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(applicationData),
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            const jobId = result.jobId;
+
+            if (jobId) {
+                //console.log('✅ Job queued successfully:', jobId);
+                onJobStarted(jobId);  // Tell parent about the job
+            }
+        } else {
+            throw new Error(`Failed to create application: ${response.status}`);
+        }
+    };
 
     // Application form configuration
     const applicationFields = [
@@ -57,8 +87,7 @@ export default function AddApplicationForm() {
     return (
         <FormCard
             title="Add Application"
-            method="post"
-            action="/applications" 
+            onSubmit={handleFormSubmit}
             fields={applicationFields}
             submitButtonText="Submit"
             clearButtonText="Clear Form"

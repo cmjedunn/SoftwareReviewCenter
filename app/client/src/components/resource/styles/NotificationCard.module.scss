@@ -1,5 +1,6 @@
 .notificationCard{
     display: flex;
+    flex-direction: row;
     max-width: 100%;
     color: var(--color-text-primary);
     font-size: var(--fs-350);
@@ -8,8 +9,25 @@
 
 .successNotificationCard{
     background: var(--color-success);
+    display: flex;
+    flex-direction: row;
+}
+
+.progressNotificationCard{
+    background: var(--color-warning);
+    display: flex;
+    flex-direction: row;
 }
 
 .errorNotificationCard{
     background: var(--color-error);
+    display: flex;
+    flex-direction: row;
+}
+
+button{
+    background: transparent;
+    border: none;
+    color: var(--color-text-primary);
+
 }
