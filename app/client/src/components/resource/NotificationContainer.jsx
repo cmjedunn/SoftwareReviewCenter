@@ -1,61 +1,159 @@
-// src/components/resource/NotificationContainer.jsx
+// Self-managing NotificationContainer that handles its own job persistence
 import { useState, useEffect } from 'react';
+import { useMsal } from '@azure/msal-react';
 import { SuccessNotificationCard, ProgressNotificationCard, ErrorNotificationCard } from './NotificationCard';
 import { useJobStatus } from '../../hooks/useJobStatus';
 
-export default function NotificationContainer({ jobId }) {
-
-    // Change from array to single notification
+export default function NotificationContainer({ jobId, onJobStarted, onJobCompleted }) {
     const [currentNotification, setCurrentNotification] = useState(null);
-    const { status: jobStatus, error: jobError } = useJobStatus(jobId);
+    const [hasShownInitialNotification, setHasShownInitialNotification] = useState(false);
+    const [managedJobId, setManagedJobId] = useState(jobId);
+    const [isCheckingActiveJobs, setIsCheckingActiveJobs] = useState(true);
+
+    const { accounts } = useMsal();
+    const { status: jobStatus, error: jobError } = useJobStatus(managedJobId);
+    const backend = import.meta.env.VITE_BACKEND_URL || "";
+
+    // Check for active jobs on mount (page load/refresh)
+    useEffect(() => {
+        const checkForActiveJobs = async () => {
+            try {
+                console.log('🔍 NotificationContainer checking for active jobs...');
+
+                const userEmail = accounts[0]?.username || accounts[0]?.name;
+                console.log('👤 User email:', userEmail);
+
+                const response = await fetch(`${backend}/api/applications/active-jobs`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-User-Email': userEmail,
+                    },
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('📋 Active jobs response:', result);
+                    const activeJobId = result.data?.mostRecentActiveJobId;
+
+                    if (activeJobId) {
+                        console.log('✅ Found active job, setting managedJobId:', activeJobId);
+                        setManagedJobId(activeJobId);
+                        setHasShownInitialNotification(true);
+                        if (onJobStarted) onJobStarted(activeJobId);
+                    } else {
+                        console.log('ℹ️ No active jobs found');
+                    }
+                } else {
+                    console.warn('⚠️ Failed to check active jobs:', response.status);
+                }
+            } catch (error) {
+                console.error('❌ Error checking active jobs:', error);
+            } finally {
+                setIsCheckingActiveJobs(false);
+            }
+        };
+
+        if (accounts.length > 0 && !managedJobId) {
+            checkForActiveJobs();
+        } else {
+            setIsCheckingActiveJobs(false);
+        }
+    }, [accounts, backend, managedJobId, onJobStarted]);
+
+    // Update managedJobId when parent passes new jobId
+    useEffect(() => {
+        if (jobId && jobId !== managedJobId) {
+            //console.log('📝 Received new jobId from parent:', jobId);
+            setManagedJobId(jobId);
+            setHasShownInitialNotification(false);
+            if (onJobStarted) onJobStarted(jobId);
+        }
+    }, [jobId, managedJobId, onJobStarted]);
+
+
+
+    // Show immediate notification when job starts (only for new jobs)
+    useEffect(() => {
+        if (managedJobId && !hasShownInitialNotification) {
+            setCurrentNotification({
+                type: 'processing',
+                message: 'Starting job...'
+            });
+            setHasShownInitialNotification(true);
+        } else if (!managedJobId) {
+            setCurrentNotification(null);
+            setHasShownInitialNotification(false);
+        }
+    }, [managedJobId, hasShownInitialNotification]);
 
     // Handle WebSocket job status updates
     useEffect(() => {
         if (!jobStatus) return;
 
-        const { status, message, result, error } = jobStatus;
+        const { status, message } = jobStatus;
 
         if (status === 'completed') {
             setCurrentNotification({
                 type: 'success',
-                message: message || 'Operation completed successfully',
-                details: result
+                message: message || 'Operation completed successfully'
             });
+
+            // Clean up after showing success
+            setTimeout(() => {
+                setManagedJobId(null);
+                if (onJobCompleted) onJobCompleted();
+            }, 8000);
+
         } else if (status === 'error') {
             setCurrentNotification({
                 type: 'error',
-                message: error || 'Operation failed',
-                details: result?.details
+                message: message || 'Operation failed'
             });
+
+            // Clean up after showing error
+            setTimeout(() => {
+                setManagedJobId(null);
+                if (onJobCompleted) onJobCompleted();
+            }, 10000);
+
         } else if (status === 'processing') {
             setCurrentNotification({
                 type: 'processing',
-                message: message || 'Processing...',
-                details: result
+                message: message || 'Processing...'
             });
         } else if (status === 'queued') {
             setCurrentNotification({
                 type: 'processing',
-                message: message || 'Queued for processing...',
-                details: result
+                message: message || 'Queued for processing...'
             });
         }
-    }, [jobStatus]);
+    }, [jobStatus, onJobCompleted]);
 
     // Handle connection errors
     useEffect(() => {
         if (jobError) {
             setCurrentNotification({
                 type: 'error',
-                message: 'Connection lost',
-                details: 'Real-time updates unavailable.'
+                message: 'Connection lost - Real-time updates unavailable'
             });
         }
     }, [jobError]);
 
     const removeNotification = () => {
         setCurrentNotification(null);
+        setManagedJobId(null);
+        if (onJobCompleted) onJobCompleted();
     };
+
+    // Show loading state while checking for active jobs
+    if (isCheckingActiveJobs) {
+        return (
+            <div style={{ padding: '1rem', opacity: 0.7 }}>
+                <small>Checking for active jobs...</small>
+            </div>
+        );
+    }
 
     // Don't render anything if no notification
     if (!currentNotification) {

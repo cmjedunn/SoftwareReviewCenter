@@ -36,7 +36,7 @@ export async function getApplicationRecordsData(id) {
         return await getRecordsData({ id: id, 'workflow-id': applicationWorkflow.workflow.id, size: 1000 });
 }
 
-export async function _deleteApplicationRecordInternal(id) {
+async function _deleteApplicationRecordInternal(id) {
     let token = await getToken();
     if (!token) throw new Error('Failed to get authentication token');
 
@@ -51,7 +51,7 @@ export async function _deleteApplicationRecordInternal(id) {
 
 }
 
-export async function _createApplicationRecordInternal(name, owner, description, environment) {
+async function _createApplicationRecordInternal(name, owner, description, environment, progressCallback = () => { }) {
     let token = await getToken();
     if (!token) throw new Error('Failed to get authentication token');
 
@@ -109,6 +109,7 @@ export async function _createApplicationRecordInternal(name, owner, description,
     const data = await response.json();
     const recordId = data.id;
     console.log(`✅ Successfully created application record: ${recordId}`);
+    progressCallback(5, `Created application record: ${name}`);
 
     // Link record to environment
     let linkApplicationRecordResponse;
@@ -122,9 +123,13 @@ export async function _createApplicationRecordInternal(name, owner, description,
         );
         linkingSuccessful = true;
         console.log('✅ Link operation completed successfully');
+
+        progressCallback(10, 'Linked to environment successfully');
+
     } catch (error) {
         console.warn(`⚠️  Failed to link application record: ${recordId} - ${error.message}`);
         // Don't throw here - record was created successfully, linking just failed
+        progressCallback(10, `Warning: Link failed - ${error.message}`);
     }
 
     // Advance record to next step
@@ -145,9 +150,12 @@ export async function _createApplicationRecordInternal(name, owner, description,
                 );
                 advancingSuccessful = true;
                 console.log('✅ Advance operation completed successfully');
+                progressCallback(15, 'Advanced workflow successfully');
+
             } catch (error) {
                 console.warn(`⚠️  Failed to advance application record: ${recordId} - ${error.message}`);
                 // Don't throw here - record was created and linked successfully, advancing just failed
+                progressCallback(15, `Warning: Advance failed - ${error.message}`);
             }
         } else {
             console.warn(`⚠️  No END step found in workflow - skipping advance operation`);
@@ -171,12 +179,15 @@ export async function _createApplicationRecordInternal(name, owner, description,
                 )
                 createControlInstancesSuccessful = true;
                 console.log('✅ Control instances created successfully');
+                progressCallback(50, 'Created security control instances');
             } catch (error) {
                 console.warn(`⚠️  Failed to create control instances for application: ${recordId} - ${error.message}`);
                 // Don't throw here either since we still want to be successful if control instances are not linked.
+                progressCallback(50, `Warning: Control instance creation failed - ${error.message}`);
+
             }
         } else {
-            console.log(`⚠️  Skipping link operation - linking or advancing was not successful`);
+            console.log(`⚠️  Skipping create control instances - linking or advancing was not successful`);
         }
     }
 
@@ -188,9 +199,12 @@ export async function _createApplicationRecordInternal(name, owner, description,
             updateControlInstancesResponse = await updateControlInstancesData(recordId);
             updateControlInstancesSuccessful = true;
             console.log('✅ Control instances updated successfully');
+            progressCallback(75, 'Updated all control instances');
         } catch (error) {
             console.warn(`⚠️  Failed to update one or more control instances for application: ${recordId} - ${error.message}`);
             // Don't throw here either since we still want to be successful if some control instances are not updated.
+            progressCallback(75, `Warning: Control instance updates failed - ${error.message}`);
+
         }
     }
 
@@ -203,14 +217,18 @@ export async function _createApplicationRecordInternal(name, owner, description,
                 submitControlInstancesResponse = await submitControlInstancesData(updateControlInstancesResponse);
                 submitControlInstancesSuccessful = true;
                 console.log('✅ Control instances submitted successfully');
+                progressCallback(95, 'Submitted control instances');
             } catch (error) {
                 console.warn(`⚠️  Failed to submit one or more control instances for application: ${recordId} - ${error.message}`);
                 // Don't throw here either since we still want to be successful if some control instances are not submitted.
+                progressCallback(92, `Warning: Control instance submission failed - ${error.message}`);
+
             }
         }
     }
 
     const linkedRecords = await getLinkedRecordsData(recordId, null, APPLICATIONS_ID);
+    progressCallback(99, `Application Created Successfuly: ${name}`);
 
     return {
         id: recordId,
@@ -581,11 +599,48 @@ export async function submitControlInstancesData(updateControlRecords) {
     return submittedControlRecords;
 }
 
+function getUserIdFromRequest(req) {
+    // Option 1: User email from request headers (if frontend sends it)
+    const userEmail = req.headers['x-user-email'] || req.headers['user-email'];
+    if (userEmail) {
+        return userEmail;
+    }
+
+    // Option 2: User email from request body (common in your form submissions)
+    if (req.body && req.body.owner) {
+        return req.body.owner; // This is the owner email from your forms
+    }
+
+    // Option 3: If you have MSAL token validation middleware that sets req.user
+    if (req.user && req.user.email) {
+        return req.user.email;
+    }
+
+    // Option 4: Extract from Authorization header if you're sending MSAL token
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        try {
+            // You could decode the JWT token here to get user info
+            // For now, we'll use a simpler approach
+            const token = authHeader.substring(7);
+            // This would require jwt library: const decoded = jwt.decode(token);
+            // return decoded.email || decoded.preferred_username;
+        } catch (error) {
+            console.warn('Could not decode token:', error.message);
+        }
+    }
+
+    // Fallback: Use IP address as identifier (not ideal but works for development)
+    const clientId = req.ip || req.connection.remoteAddress || `client-${Date.now()}`;
+    console.log(`⚠️ Using fallback user ID: ${clientId}`);
+    return clientId;
+}
+
 /**
  * RATE LIMITING
  */
 
-export const createApplicationRecordData = controllerLimiter.wrap(_createApplicationRecordInternal);
+export const createApplicationRecordData = controllerLimiter.wrap((name, owner, description, environment, progressCallback) => _createApplicationRecordInternal(name, owner, description, environment, progressCallback));
 
 export const deleteApplicationRecordData = controllerLimiter.wrap(_deleteApplicationRecordInternal);
 
@@ -611,7 +666,7 @@ export async function deleteApplicationRecord(req, res) {
 
     try {
         const { id } = req.params;
-        
+
         const jobManager = JobManager.getInstance();
         const jobId = jobManager.createJob('deleteApplicationRecord', {
             recordId: id
@@ -626,7 +681,7 @@ export async function deleteApplicationRecord(req, res) {
 
         console.log(`✅ Queued application record deletion as job ${jobId}`);
         return res.status(202).json(successResponse);
-        
+
     } catch (error) {
         console.error(`❌ Error queueing application record deletion:`, error.message);
         return res.status(500).json(createErrorResponse(req, error.message));
@@ -661,12 +716,10 @@ export async function createApplicationRecord(req, res) {
     try {
         // Create job instead of processing directly
         const jobManager = JobManager.getInstance();
+        const userId = getUserIdFromRequest(req); // Add this line
         const jobId = jobManager.createJob('createApplicationRecord', {
-            name,
-            owner,
-            description,
-            environment
-        });
+            name, owner, description, environment
+        }, null, userId); // Add userId parameter
 
         // Return job ID immediately
         const successResponse = createSuccessResponse(req, {
@@ -678,7 +731,7 @@ export async function createApplicationRecord(req, res) {
 
         console.log(`✅ Queued application record creation as job ${jobId}`);
         return res.status(202).json(successResponse); // 202 = Accepted (processing async)
-        
+
     } catch (error) {
         console.error(`❌ Error queueing application record creation:`, error.message);
         return res.status(500).json(createErrorResponse(req, error.message));
@@ -786,7 +839,7 @@ export async function getJobStatus(req, res) {
 
         const successResponse = createSuccessResponse(req, status);
         return res.status(200).json(successResponse);
-        
+
     } catch (error) {
         console.error(`❌ Error getting job status:`, error.message);
         return res.status(500).json(createErrorResponse(req, error.message));
@@ -802,9 +855,34 @@ export async function getQueueStatus(req, res) {
 
         const successResponse = createSuccessResponse(req, status);
         return res.status(200).json(successResponse);
-        
+
     } catch (error) {
         console.error(`❌ Error getting queue status:`, error.message);
+        return res.status(500).json(createErrorResponse(req, error.message));
+    }
+}
+
+export async function getActiveJobs(req, res) {
+    logRequest(req);
+
+    try {
+        const jobManager = JobManager.getInstance();
+        
+        // Extract user ID from MSAL authentication
+        const userId = getUserIdFromRequest(req);
+        
+        const activeJobs = jobManager.getActiveJobsForUser(userId);
+        const mostRecentJob = jobManager.getMostRecentActiveJobForUser(userId);
+        
+        const successResponse = createSuccessResponse(req, {
+            activeJobs,
+            mostRecentActiveJobId: mostRecentJob?.id || null,
+            count: activeJobs.length
+        });
+        
+        return res.status(200).json(successResponse);
+    } catch (error) {
+        console.error('❌ Error getting active jobs:', error.message);
         return res.status(500).json(createErrorResponse(req, error.message));
     }
 }

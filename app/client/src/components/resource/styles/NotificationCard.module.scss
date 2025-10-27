@@ -1,33 +1,38 @@
-.notificationCard{
+.notificationCard {
     display: flex;
     flex-direction: row;
     max-width: 100%;
     color: var(--color-text-primary);
     font-size: var(--fs-350);
     padding: 1em;
+
+    button {
+        background: transparent;
+        border: none;
+        color: var(--color-text-primary);
+        max-width: min-content;
+    }
 }
 
-.successNotificationCard{
+.successNotificationCard {
     background: var(--color-success);
     display: flex;
     flex-direction: row;
+    flex-wrap: nowrap;
 }
 
-.progressNotificationCard{
+.progressNotificationCard {
     background: var(--color-warning);
     display: flex;
     flex-direction: row;
+    flex-wrap: nowrap;
+
 }
 
-.errorNotificationCard{
+.errorNotificationCard {
     background: var(--color-error);
     display: flex;
     flex-direction: row;
-}
-
-button{
-    background: transparent;
-    border: none;
-    color: var(--color-text-primary);
+    flex-wrap: nowrap;
 
 }

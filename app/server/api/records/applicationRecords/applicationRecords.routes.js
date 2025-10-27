@@ -6,8 +6,9 @@ import {
     createControlInstances, 
     updateControlInstances, 
     deleteApplicationRecord,
-    getJobStatus,        // NEW
-    getQueueStatus       // NEW
+    getJobStatus,       
+    getQueueStatus,
+    getActiveJobs      // NEW
 } from './applicationRecords.controller.js';
 
 const router = Router();
@@ -33,5 +34,8 @@ router.route('/jobs/:jobId')
 
 router.route('/queue/status')
     .get(getQueueStatus);            // GET /api/applications/queue/status
+
+router.route('/active-jobs')
+    .get(getActiveJobs);
 
 export default router;

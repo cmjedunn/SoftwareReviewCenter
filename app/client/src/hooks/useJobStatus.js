@@ -1,6 +1,4 @@
-// /app/client/src/hooks/useJobStatus.js
-// WebSocket hook that matches your existing React patterns
-
+// Updated useJobStatus.js - ONLY removes auto-cleanup, keeps everything else the same
 import { useState, useEffect, useRef } from 'react';
 
 export function useJobStatus(jobId) {
@@ -9,6 +7,7 @@ export function useJobStatus(jobId) {
     const [isConnected, setIsConnected] = useState(false);
     const wsRef = useRef(null);
     const reconnectTimeoutRef = useRef(null);
+    
 
     useEffect(() => {
         if (!jobId) {
@@ -18,7 +17,7 @@ export function useJobStatus(jobId) {
             return;
         }
 
-        //console.log(`🔌 Connecting to WebSocket for job ${jobId}`);
+        console.log(`🔌 Connecting to WebSocket for job ${jobId}`);
 
         const connectWebSocket = () => {
             // Use same URL pattern as your existing backend calls
@@ -31,7 +30,7 @@ export function useJobStatus(jobId) {
             wsRef.current = ws;
 
             ws.onopen = () => {
-                //console.log('✅ WebSocket connected for job', jobId);
+                console.log('✅ WebSocket connected for job', jobId);
                 setIsConnected(true);
                 setError(null);
 
@@ -47,8 +46,8 @@ export function useJobStatus(jobId) {
                     const data = JSON.parse(event.data);
 
                     if (data.type === 'jobUpdate' && data.jobId === jobId) {
-                        //console.log(`📊 Job ${jobId} update:`, data.status, `${data.progress}%`);
-
+                        console.log(`📊 Job ${jobId} update:`, data.status, `${data.progress}%`);
+                        
                         setStatus({
                             status: data.status,
                             progress: data.progress || 0,
@@ -59,17 +58,8 @@ export function useJobStatus(jobId) {
                             updatedAt: new Date(data.updatedAt)
                         });
 
-                        // Auto-cleanup completed/errored jobs after 5 seconds
-                        if (data.status === 'completed' || data.status === 'error') {
-                            setTimeout(() => {
-                                //console.log(`🧹 Auto-cleaning job ${jobId} status`);
-                                setStatus(null);
-                                setIsConnected(false);
-                                if (ws.readyState === WebSocket.OPEN) {
-                                    ws.close();
-                                }
-                            }, 5000);
-                        }
+                        // REMOVED: Auto-cleanup that was causing notifications to disappear!
+                        // No more setTimeout that clears status after 5 seconds
                     }
                 } catch (err) {
                     console.error('❌ WebSocket message parse error:', err);
@@ -84,12 +74,12 @@ export function useJobStatus(jobId) {
             };
 
             ws.onclose = (/**event**/) => {
-                //console.log('🔌 WebSocket disconnected for job', jobId, event.code, event.reason);
+                console.log('🔌 WebSocket disconnected for job', jobId, event.code, event.reason);
                 setIsConnected(false);
 
                 // Auto-reconnect for active jobs (not completed/error)
                 if (status?.status === 'queued' || status?.status === 'processing') {
-                    //console.log('🔄 Reconnecting in 2 seconds...');
+                    console.log('🔄 Reconnecting in 2 seconds...');
                     reconnectTimeoutRef.current = setTimeout(connectWebSocket, 2000);
                 }
             };

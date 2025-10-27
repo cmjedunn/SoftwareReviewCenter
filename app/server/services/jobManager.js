@@ -8,7 +8,7 @@ import { controllerLimiter } from '../utils/limiter.js';
  */
 class JobManager {
     static instance = null;
-    
+
     static getInstance() {
         if (!JobManager.instance) {
             JobManager.instance = new JobManager();
@@ -20,9 +20,10 @@ class JobManager {
         this.jobs = new Map();           // jobId -> job data
         this.jobQueue = [];              // array of jobIds waiting to be processed
         this.subscribers = new Map();    // jobId -> Set of WebSocket connections
+        this.userJobs = new Map();       // userId -> Set of active jobIds
         this.isProcessing = false;       // simple processing flag
         this.clientConnections = new WeakMap(); // ws -> metadata
-        
+
         // Start processing queue
         this.processQueue();
     }
@@ -30,7 +31,7 @@ class JobManager {
     /**
      * 📝 Create a new job and return jobId immediately
      */
-    createJob(type, data, clientWs = null) {
+    createJob(type, data, clientWs = null, userId = null) {
         const jobId = uuidv4();
         const job = {
             id: jobId,
@@ -41,6 +42,7 @@ class JobManager {
             progress: 0,
             result: null,
             error: null,
+            userId: userId, // Track which user owns this job
             createdAt: new Date(),
             updatedAt: new Date()
         };
@@ -48,12 +50,20 @@ class JobManager {
         this.jobs.set(jobId, job);
         this.jobQueue.push(jobId);
 
+        // Track user -> job mapping
+        if (userId) {
+            if (!this.userJobs.has(userId)) {
+                this.userJobs.set(userId, new Set());
+            }
+            this.userJobs.get(userId).add(jobId);
+        }
+
         // Auto-subscribe the creating client if provided
         if (clientWs) {
             this.subscribeToJob(jobId, clientWs);
         }
 
-        console.log(`📝 Created job ${jobId} (type: ${type}, queue position: ${job.position})`);
+        console.log(`📝 Created job ${jobId} (type: ${type}, user: ${userId}, queue position: ${job.position})`);
         this.broadcastJobUpdate(jobId);
 
         return jobId;
@@ -70,14 +80,14 @@ class JobManager {
 
             this.isProcessing = true;
             const jobId = this.jobQueue.shift();
-            
+
             try {
                 await this.processJob(jobId);
             } catch (error) {
                 console.error(`❌ Error processing job ${jobId}:`, error);
                 this.updateJobStatus(jobId, 'error', 0, null, error.message);
             }
-            
+
             // Update queue positions for remaining jobs
             this.updateQueuePositions();
             this.isProcessing = false;
@@ -96,14 +106,19 @@ class JobManager {
 
         try {
             let result;
-            
+
+            // Create progress callback that the controller can use
+            const progressCallback = (progress, message) => {
+                this.updateJobStatus(jobId, 'processing', progress, null, null, message);
+            };
+
             // Route to appropriate handler based on job type
             switch (job.type) {
                 case 'createApplicationRecord':
-                    result = await this.processCreateApplicationRecord(jobId, job.data);
+                    result = await this.processCreateApplicationRecord(jobId, job.data, progressCallback);
                     break;
                 case 'deleteApplicationRecord':
-                    result = await this.processDeleteApplicationRecord(jobId, job.data);
+                    result = await this.processDeleteApplicationRecord(jobId, job.data, progressCallback);
                     break;
                 default:
                     throw new Error(`Unknown job type: ${job.type}`);
@@ -121,28 +136,29 @@ class JobManager {
     /**
      * 🏗️ Process application record creation (using your existing logic)
      */
-    async processCreateApplicationRecord(jobId, { name, owner, description, environment }) {
-        // Import your existing function
+    async processCreateApplicationRecord(jobId, { name, owner, description, environment }, progressCallback) {
+        // Import your existing wrapped function (with rate limiting)
         const { createApplicationRecordData } = await import('../api/records/applicationRecords/applicationRecords.controller.js');
-        
-        this.updateJobStatus(jobId, 'processing', 25, null, null, 'Creating application record...');
-        
-        // This already uses your rate limiter via controllerLimiter.wrap()
-        const result = await createApplicationRecordData(name, owner, description, environment);
-        
+
+        progressCallback(25, 'Creating application record...');
+
+        // Pass the progress callback to your controller function
+        const result = await createApplicationRecordData(name, owner, description, environment, progressCallback);
+
         return result;
     }
 
     /**
      * 🗑️ Process application record deletion
      */
-    async processDeleteApplicationRecord(jobId, { recordId }) {
+    async processDeleteApplicationRecord(jobId, { recordId }, progressCallback) {
         const { deleteApplicationRecordData } = await import('../api/records/applicationRecords/applicationRecords.controller.js');
-        
-        this.updateJobStatus(jobId, 'processing', 50, null, null, 'Deleting application record...');
-        
-        const result = await deleteApplicationRecordData(recordId);
-        
+
+        progressCallback(50, 'Deleting application record...');
+
+        // Pass the progress callback to your controller function  
+        const result = await deleteApplicationRecordData(recordId, progressCallback);
+
         return result;
     }
 
@@ -161,6 +177,13 @@ class JobManager {
         job.updatedAt = new Date();
 
         this.broadcastJobUpdate(jobId);
+
+        // Clean up completed jobs from user tracking after a delay
+        if (status === 'completed' || status === 'error') {
+            setTimeout(() => {
+                this.cleanupCompletedJob(jobId);
+            }, 30000); // Keep completed jobs for 30 seconds for status checking
+        }
     }
 
     /**
@@ -179,7 +202,7 @@ class JobManager {
     broadcastJobUpdate(jobId) {
         const job = this.jobs.get(jobId);
         const subscribers = this.subscribers.get(jobId);
-        
+
         if (!job || !subscribers) return;
 
         const update = {
@@ -213,6 +236,29 @@ class JobManager {
      */
     getJobStatus(jobId) {
         return this.jobs.get(jobId) || null;
+    }
+
+
+    /**
+     * 🧹 Clean up completed job from user tracking
+     */
+    cleanupCompletedJob(jobId) {
+        const job = this.jobs.get(jobId);
+        if (!job) return;
+
+        // Remove from user jobs tracking
+        if (job.userId && this.userJobs.has(job.userId)) {
+            this.userJobs.get(job.userId).delete(jobId);
+            if (this.userJobs.get(job.userId).size === 0) {
+                this.userJobs.delete(job.userId);
+            }
+        }
+
+        // Keep the job data for a bit longer in case of late status checks
+        // but mark it as cleaned up
+        job.cleanedUp = true;
+
+        console.log(`🧹 Cleaned up completed job ${jobId} for user ${job.userId}`);
     }
 
     /**
@@ -250,6 +296,48 @@ class JobManager {
             activeSubscribers: this.subscribers.size
         };
     }
+
+    /**
+ * 👤 Get active jobs for a specific user
+ */
+    getActiveJobsForUser(userId) {
+        if (!userId || !this.userJobs.has(userId)) {
+            return [];
+        }
+
+        const jobIds = this.userJobs.get(userId);
+        const activeJobs = [];
+
+        for (const jobId of jobIds) {
+            const job = this.jobs.get(jobId);
+            if (job && (job.status === 'queued' || job.status === 'processing')) {
+                activeJobs.push({
+                    id: job.id,
+                    type: job.type,
+                    status: job.status,
+                    progress: job.progress,
+                    message: job.message,
+                    createdAt: job.createdAt,
+                    updatedAt: job.updatedAt
+                });
+            }
+        }
+
+        return activeJobs;
+    }
+
+    /**
+     * 👤 Get the most recent active job for a user
+     */
+    getMostRecentActiveJobForUser(userId) {
+        const activeJobs = this.getActiveJobsForUser(userId);
+        if (activeJobs.length === 0) return null;
+
+        // Return the most recently created active job
+        return activeJobs.sort((a, b) => b.createdAt - a.createdAt)[0];
+    }
+
+
 }
 
 export { JobManager };
