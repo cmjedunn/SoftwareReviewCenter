@@ -40,7 +40,10 @@ const PlaceholderCard = ({ application, index, onLoadAnimation, onNavigate }) =>
         <div
             className={styles.placeholderCard}
             onClick={handleClick}
-            style={{ minHeight: '200px' }}
+            style={{
+                height: "100 %",
+                width: "100 %"
+            }}
             title="Click to view • Ctrl+Click to load animation"
         >
             <Card>
@@ -313,7 +316,7 @@ export default function ApplicationsList() {
                 state: { application }
             });
         } else {
-            console.log('❌ No application ID');
+            console.log('No application ID');
         }
     };
 

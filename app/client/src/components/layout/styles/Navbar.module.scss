@@ -53,7 +53,7 @@
     }
 }
 
-.login {}
+
 
 a {
     color: var(--color-navtext);
@@ -70,7 +70,16 @@ a {
         font-weight: 500;
         font-size: var(--fs-400);
     }
-    .navlinks{
+
+    .navlinks {
         display: none;
+    }
+}
+
+@media screen and (max-width: 300px) {
+    .navbar {
+        p {
+            display: none;
+        }
     }
 }

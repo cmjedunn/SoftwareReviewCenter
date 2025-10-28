@@ -27,7 +27,7 @@ export function ProgressNotificationCard({ children }) {
 
 export function ErrorNotificationCard({ children }) {
     return (
-        <NotificationCard className={styles.NotificationCard}>
+        <NotificationCard className={styles.errorNotificationCard}>
             {children}
         </NotificationCard>
     );

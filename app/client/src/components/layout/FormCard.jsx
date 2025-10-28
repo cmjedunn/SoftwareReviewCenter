@@ -10,7 +10,9 @@ const FormCard = ({
     fields = [],
     onSubmit,
     submitButtonText = "Submit",
-    clearButtonText = "Clear"
+    clearButtonText = "Clear",
+    isSubmitDisabled = false,        // ✨ New prop to disable submit
+    disabledMessage = null           // ✨ Optional message to show why disabled
 }) => {
     const handleClear = (e) => {
         e.preventDefault();
@@ -21,14 +23,28 @@ const FormCard = ({
     };
 
     const handleSubmit = async (e) => {
+        // ✨ Prevent submission if disabled
+        if (isSubmitDisabled) {
+            e.preventDefault();
+            return;
+        }
+
         if (onSubmit) {
             e.preventDefault();
             const formData = new FormData(e.target);
             try {
                 await onSubmit(formData);
+
+                // 🎯 Auto-clear form after successful submission
+                console.log('✅ Form submitted successfully, clearing form...');
+                const form = e.target;
+                if (form) {
+                    form.reset();
+                }
+
             } catch (error) {
                 console.error('Form submission error:', error);
-                // Handle error display here if needed
+                // Don't clear form on error - let user see their input
             }
         }
     };
@@ -47,6 +63,7 @@ const FormCard = ({
                         placeholder={field.placeholder || ''}
                         className={styles.input}
                         required={field.required}
+                        disabled={isSubmitDisabled}
                     />
                 );
 
@@ -59,6 +76,7 @@ const FormCard = ({
                         rows={field.rows || 4}
                         className={styles.textarea}
                         required={field.required}
+                        disabled={isSubmitDisabled}
                     />
                 );
 
@@ -69,6 +87,7 @@ const FormCard = ({
                         defaultValue={field.defaultValue || ''}
                         className={styles.select}
                         required={field.required}
+                        disabled={isSubmitDisabled}
                     >
                         <option value="">{field.placeholder || 'Select an option...'}</option>
                         {field.options?.map((option, index) => (
@@ -97,6 +116,7 @@ const FormCard = ({
                         placeholder={field.placeholder || ''}
                         className={styles.input}
                         required={field.required}
+                        disabled={isSubmitDisabled}
                     />
                 );
         }
@@ -104,12 +124,12 @@ const FormCard = ({
 
     return (
         <Card className={styles.formCard} title={title}>
-            <Form 
-                method={method} 
-                action={action} 
+            <Form
+                method={method}
+                action={action}
                 onSubmit={handleSubmit}
                 className={styles.form}
-            >                
+            >
                 <div className={styles.formContent}>
                     {fields.map((field, index) => (
                         <div key={field.name || index} className={styles.fieldGroup}>
@@ -126,21 +146,31 @@ const FormCard = ({
                             )}
                         </div>
                     ))}
+
+
+                    {disabledMessage && (
+                        <div className={styles.disabledMessage}>
+                            <small>{disabledMessage}</small>
+                        </div>
+                    )}
                 </div>
+
                 <div className={styles.buttonGroup}>
                     <button
                         type="button"
                         onClick={handleClear}
                         className={styles.clearButton}
+                        disabled={isSubmitDisabled}
                     >
                         {clearButtonText}
                     </button>
 
                     <button
                         type="submit"
-                        className={styles.submitButton}
+                        className={`${styles.submitButton} ${isSubmitDisabled ? styles.disabled : ''}`}
+                        disabled={isSubmitDisabled}
                     >
-                        {submitButtonText}
+                        {isSubmitDisabled ? 'Processing...' : submitButtonText}
                     </button>
                 </div>
             </Form>

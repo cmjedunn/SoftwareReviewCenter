@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import FormCard from '../layout/FormCard';
 
-export default function AddApplicationForm({ onJobStarted = () => { } }) {
+export default function AddApplicationForm({ onJobStarted = () => {}, isSubmitDisabled = false }) {
     const backend = import.meta.env.VITE_BACKEND_URL || "";
 
     const [environments, setEnvironments] = useState([]);
@@ -91,6 +91,7 @@ export default function AddApplicationForm({ onJobStarted = () => { } }) {
             fields={applicationFields}
             submitButtonText="Submit"
             clearButtonText="Clear Form"
+            isSubmitDisabled={isSubmitDisabled} 
         />
     );
 }

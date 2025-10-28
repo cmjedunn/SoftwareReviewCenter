@@ -6,33 +6,83 @@
     font-size: var(--fs-350);
     padding: 1em;
 
-    button {
-        background: transparent;
-        border: none;
-        color: var(--color-text-primary);
-        max-width: min-content;
+    :global(.card) {
+        padding: 0; // Remove card padding, we'll handle it ourselves
+    }
+
+    > div {
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        flex: 1 !important;
+        gap: 1rem;
+        padding: 1em; // Apply padding here instead
+
+        > span {
+            flex: 1;
+            line-height: 1.4;
+        }
+
+        > button {
+            background: transparent;
+            border: none;
+            color: var(--color-text-primary);
+            cursor: pointer;
+            font-size: 1.25em;
+            font-weight: bold;
+            padding: 0.25rem 0.5rem;
+            border-radius: 3px;
+            flex-shrink: 0;
+            min-width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s ease;
+
+            &:hover {
+                background: rgba(255, 255, 255, 0.15);
+            }
+
+            &:active {
+                background: rgba(255, 255, 255, 0.25);
+            }
+
+            &:focus {
+                outline: 2px solid rgba(255, 255, 255, 0.5);
+                outline-offset: 1px;
+            }
+        }
     }
 }
 
 .successNotificationCard {
     background: var(--color-success);
-    display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
 }
 
 .progressNotificationCard {
     background: var(--color-warning);
-    display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
-
 }
 
 .errorNotificationCard {
     background: var(--color-error);
-    display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
+}
 
+@media screen and (max-width: 480px) {
+    .notificationCard > div {
+        padding: 0.75rem;
+        gap: 0.75rem;
+
+        > span {
+            font-size: var(--fs-400, 1rem);
+        }
+
+        > button {
+            min-width: 24px;
+            height: 24px;
+            font-size: 1.1em;
+            padding: 0.2rem 0.4rem;
+        }
+    }
 }

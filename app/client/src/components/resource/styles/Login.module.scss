@@ -188,6 +188,15 @@
     }
 }
 
+@media screen and (max-width: 768px) {
+
+    .dropbtn {
+        p {
+            display: none;
+        }
+    }
+}
+
 @media screen and (max-width: 600px) {
     .userPhoto {
         height: auto;

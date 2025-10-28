@@ -1,4 +1,4 @@
-// Simplified Applications.jsx - NotificationContainer manages itself
+// Applications.jsx - Track when first notification appears
 import { useState } from 'react';
 import { PageWrapper, AuthContent } from '../components/layout/Utils';
 import { Card } from '../components/layout/Card';
@@ -9,15 +9,18 @@ import NotificationContainer from '../components/resource/NotificationContainer'
 
 export default function Applications() {
   const [currentJobId, setCurrentJobId] = useState(null);
+  const [hasActiveNotification, setHasActiveNotification] = useState(false);
 
   const handleJobStarted = (jobId) => {
     //console.log('🎯 Job started:', jobId);
     setCurrentJobId(jobId);
+    setHasActiveNotification(true); 
   };
 
   const handleJobCompleted = () => {
     //console.log('✅ Job completed, clearing state');
     setCurrentJobId(null);
+    setHasActiveNotification(false);
   };
 
   return (
@@ -27,7 +30,10 @@ export default function Applications() {
           {/* Left Column - Form */}
           <div className={styles.formSection}>
             <Card title="Applications" />
-            <AddApplicationForm onJobStarted={handleJobStarted} />
+            <AddApplicationForm 
+              onJobStarted={handleJobStarted}
+              isSubmitDisabled={hasActiveNotification} 
+            />
           </div>
           
           {/* Right Column - Applications List */}
