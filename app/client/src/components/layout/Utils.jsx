@@ -42,9 +42,10 @@ export function AuthContent(props) {
             </AuthenticatedTemplate>
             <UnauthenticatedTemplate>
                 <div className={styles.mainContent}>
-                    <Card title="This content is unauthorized.">
-
-                        <p>Please sign in with an authorized account.</p>
+                    <Card title="This content is unauthorized." className={styles.unauthorized} >
+                        <div className={styles.unauthorized}>
+                            <p>Please sign in with an authorized account.</p>
+                        </div>
                     </Card>
                 </div>
             </UnauthenticatedTemplate>

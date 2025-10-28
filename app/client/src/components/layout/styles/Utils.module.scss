@@ -30,6 +30,22 @@
     height: 100%;
 }
 
+.unauthorized {
+    margin: 1rem;
+    display: flex;
+    flex: 1;
+    justify-content: center;
+    align-items: center;
+   
+}
+
+@media screen and (max-width: 768px) {
+    .unauthorized {
+        margin: .75rem;
+       
+    }
+}
+
 // // Mobile - accommodate rotated horizontal sidebar
 @media screen and (max-width: 600px) {
     .content {
@@ -42,16 +58,3 @@
 
 }
 
-//     .mainContent {
-//         // Take remaining space after horizontal sidebar
-//         flex: 1;
-
-//         //width: 100%;
-//     }
-// }
-
-// @media screen and (max-width: 480px) {
-//     .mainContent {
-
-//     }
-// }

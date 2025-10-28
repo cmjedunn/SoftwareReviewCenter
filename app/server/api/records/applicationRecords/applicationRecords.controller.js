@@ -600,20 +600,36 @@ export async function submitControlInstancesData(updateControlRecords) {
 }
 
 function getUserIdFromRequest(req) {
+    console.log('🔍 Getting user ID from request...');
+    console.log('📋 Request headers:', {
+        'x-user-email': req.headers['x-user-email'],
+        'user-email': req.headers['user-email'],
+        authorization: req.headers.authorization ? 'Present' : 'Not present'
+    });
+    console.log('📋 Request body owner:', req.body?.owner);
+
+    let userId = null;
+
     // Option 1: User email from request headers (if frontend sends it)
     const userEmail = req.headers['x-user-email'] || req.headers['user-email'];
     if (userEmail) {
-        return userEmail;
+        userId = userEmail.toLowerCase(); // NORMALIZE TO LOWERCASE
+        console.log('✅ Found user ID in headers:', userEmail, '→ normalized to:', userId);
+        return userId;
     }
 
     // Option 2: User email from request body (common in your form submissions)
     if (req.body && req.body.owner) {
-        return req.body.owner; // This is the owner email from your forms
+        userId = req.body.owner.toLowerCase(); // NORMALIZE TO LOWERCASE
+        console.log('✅ Found user ID in body.owner:', req.body.owner, '→ normalized to:', userId);
+        return userId;
     }
 
     // Option 3: If you have MSAL token validation middleware that sets req.user
     if (req.user && req.user.email) {
-        return req.user.email;
+        userId = req.user.email.toLowerCase(); // NORMALIZE TO LOWERCASE
+        console.log('✅ Found user ID in req.user.email:', req.user.email, '→ normalized to:', userId);
+        return userId;
     }
 
     // Option 4: Extract from Authorization header if you're sending MSAL token
@@ -623,6 +639,7 @@ function getUserIdFromRequest(req) {
             // You could decode the JWT token here to get user info
             // For now, we'll use a simpler approach
             const token = authHeader.substring(7);
+            console.log('⚠️ Could decode JWT token for user info, but not implemented');
             // This would require jwt library: const decoded = jwt.decode(token);
             // return decoded.email || decoded.preferred_username;
         } catch (error) {
@@ -716,10 +733,10 @@ export async function createApplicationRecord(req, res) {
     try {
         // Create job instead of processing directly
         const jobManager = JobManager.getInstance();
-        const userId = getUserIdFromRequest(req); // Add this line
+        const userId = getUserIdFromRequest(req);
         const jobId = jobManager.createJob('createApplicationRecord', {
             name, owner, description, environment
-        }, null, userId); // Add userId parameter
+        }, null, userId);
 
         // Return job ID immediately
         const successResponse = createSuccessResponse(req, {
@@ -867,19 +884,48 @@ export async function getActiveJobs(req, res) {
 
     try {
         const jobManager = JobManager.getInstance();
-        
+
         // Extract user ID from MSAL authentication
         const userId = getUserIdFromRequest(req);
-        
+        console.log('🔍 Getting active jobs for user:', userId);
+
+        // Debug: Check what's in userJobs map
+        console.log('📊 All users with jobs:', Array.from(jobManager.userJobs.keys()));
+        console.log('📊 Jobs for this user:', jobManager.userJobs.get(userId));
+
         const activeJobs = jobManager.getActiveJobsForUser(userId);
         const mostRecentJob = jobManager.getMostRecentActiveJobForUser(userId);
-        
-        const successResponse = createSuccessResponse(req, {
+
+        console.log('✅ Found active jobs:', activeJobs.length);
+        console.log('🔍 Most recent job:', mostRecentJob?.id);
+
+        // Enhanced debug info - show ALL jobs and their user associations
+        const allJobs = Array.from(jobManager.jobs.values()).map(j => ({
+            id: j.id,
+            userId: j.userId,
+            status: j.status,
+            type: j.type,
+            createdAt: j.createdAt
+        }));
+
+        console.log('🔍 ALL JOBS WITH USER IDs:', allJobs);
+        console.log('🔍 USER JOBS MAP:', Object.fromEntries(jobManager.userJobs));
+
+        const responseData = {
             activeJobs,
             mostRecentActiveJobId: mostRecentJob?.id || null,
-            count: activeJobs.length
-        });
-        
+            count: activeJobs.length,
+            userId: userId, // Include for debugging
+            debug: {
+                totalJobs: jobManager.jobs.size,
+                totalUsers: jobManager.userJobs.size,
+                allJobStatuses: allJobs,
+                userJobsMap: Object.fromEntries(jobManager.userJobs),
+                requestedUserId: userId
+            }
+        };
+
+        const successResponse = createSuccessResponse(req, responseData);
         return res.status(200).json(successResponse);
     } catch (error) {
         console.error('❌ Error getting active jobs:', error.message);

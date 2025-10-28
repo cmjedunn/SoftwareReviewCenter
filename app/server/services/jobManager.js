@@ -29,10 +29,19 @@ class JobManager {
     }
 
     /**
-     * 📝 Create a new job and return jobId immediately
-     */
+  * 📝 Create a new job and return jobId immediately
+  */
     createJob(type, data, clientWs = null, userId = null) {
         const jobId = uuidv4();
+
+        console.log('🚀 Creating job:', {
+            jobId,
+            type,
+            userId,
+            hasUserId: !!userId,
+            userIdType: typeof userId
+        });
+
         const job = {
             id: jobId,
             type,
@@ -42,6 +51,7 @@ class JobManager {
             progress: 0,
             result: null,
             error: null,
+            message: null,
             userId: userId, // Track which user owns this job
             createdAt: new Date(),
             updatedAt: new Date()
@@ -54,17 +64,17 @@ class JobManager {
         if (userId) {
             if (!this.userJobs.has(userId)) {
                 this.userJobs.set(userId, new Set());
+                console.log(`📝 Created new user entry for: ${userId}`);
             }
             this.userJobs.get(userId).add(jobId);
+            console.log(`📝 Added job ${jobId} to user ${userId}'s job list`);
+            console.log(`📝 User ${userId} now has jobs:`, Array.from(this.userJobs.get(userId)));
+        } else {
+            console.log(`⚠️ Job ${jobId} created without userId!`);
         }
 
-        // Auto-subscribe the creating client if provided
-        if (clientWs) {
-            this.subscribeToJob(jobId, clientWs);
-        }
-
-        console.log(`📝 Created job ${jobId} (type: ${type}, user: ${userId}, queue position: ${job.position})`);
-        this.broadcastJobUpdate(jobId);
+        console.log(`📝 Total jobs: ${this.jobs.size}, Total users: ${this.userJobs.size}`);
+        console.log(`📝 All user IDs: ${Array.from(this.userJobs.keys())}`);
 
         return jobId;
     }

@@ -25,11 +25,25 @@ $active-color: var(--color-sidebar-active);
     from {
         opacity: 0;
         transform: translateY(-100%);
+        //transform: translateX(-100px);
     }
 
     to {
         opacity: 1;
         transform: translateY(0);
+        //transform: translateX(0);
+    }
+}
+
+@keyframes toggleButtonFadeIn {
+    from {
+        justify-content: left;
+        padding-left: ($collapsed-width)*.178;
+    }
+
+    to {
+        justify-content: center;
+        padding-left: 0;
     }
 }
 
@@ -57,6 +71,26 @@ $active-color: var(--color-sidebar-active);
 
         .togglebutton {
             box-shadow: none;
+            opacity: 1; // Keep at default opacity
+
+            animation: toggleButtonFadeIn 0s null .3s both;
+
+
+
+
+            &:active {
+                color: $active-color;
+                transform: scale(0.98);
+            }
+        }
+    }
+
+    &:not(.collapsed) {
+        .togglebutton {
+            justify-content: left;
+            align-items: center;
+            padding-left: ($collapsed-width)*.178;
+
         }
     }
 
@@ -73,10 +107,18 @@ $active-color: var(--color-sidebar-active);
         width: 100%;
         height: 3rem;
         display: flex;
-        align-items: center;
         justify-content: center;
+        align-items: center;
         box-shadow: 0 2px 8px var(--shadow-color-light);
-        transition: all 0.2s ease;
+
+        //transition: all 0.2s ease;
+
+        button {
+            max-width: 100%;
+            max-height: 100%;
+            margin: 0;
+            padding: 0;
+        }
 
         &:hover {
             color: $text-color-active;
@@ -86,8 +128,8 @@ $active-color: var(--color-sidebar-active);
 
         &:active {
             color: $active-color;
-            transform: scale(0.98);
         }
+
     }
 
     .menu {
@@ -116,7 +158,7 @@ $active-color: var(--color-sidebar-active);
     justify-content: flex-start;
     border-radius: 0px;
     min-height: 2.5em;
-    margin: 0 0.5rem;
+    //margin: 0 0.5rem;
     border-left: 3px solid transparent;
 
     &:hover {
@@ -146,11 +188,25 @@ $active-color: var(--color-sidebar-active);
     pointer-events: auto;
 }
 
+
+
 // Mobile - horizontal layout
 @media screen and (max-width: 600px) {
+
+    .menu {
+        .menuItem {
+            opacity: 0;
+            transform: translateY(-10px); // ← Add this for mobile slide effect
+            pointer-events: none;
+        }
+    }
+
+    $sidebar-width: 8em;
+    $collapsed-width: 1.5em;
+
     .sidebar {
         width: 100vw;
-        height: auto;
+        height: $collapsed-width;
         min-height: auto;
         max-height: none;
         position: relative;
@@ -161,60 +217,109 @@ $active-color: var(--color-sidebar-active);
         display: flex;
         flex-direction: row;
         align-items: stretch;
-        background: linear-gradient(90deg, $sidebar-bg 0%, var(--color-bg-tertiary) 100%);
         box-shadow: 0 2px 8px var(--shadow-color-light);
         border-right: none;
+        border-top: 1px solid var(--color-border);
         border-bottom: 1px solid var(--color-border);
-        
+        z-index: 3;
+
+        .togglebutton {
+            height: auto;
+            width: auto;
+            aspect-ratio: 1 / 1;
+            z-index: 4;
+            border: none;
+            padding: 0;
+            justify-content: center;
+
+        }
+
         &.collapsed {
             width: 100vw;
-            
+            height: $collapsed-width;
+
+
+            background: linear-gradient(90deg, $sidebar-bg 0%, var(--color-bg-tertiary) 100%);
+
+
             .menu {
                 display: none;
+
+                .menuItem {
+                    opacity: 0;
+                }
+            }
+
+            .togglebutton {
+                animation: none;
+                padding: 0;
+                justify-content: center;
             }
         }
 
         // Expanded state shows dropdown menu
         &:not(.collapsed) {
+
+            background-image: $sidebar-bg;
+            background-color: $sidebar-bg;
+
+
+            .togglebutton {
+                animation: none;
+                padding: 0;
+                justify-content: center;
+
+            }
+
             .menu {
                 position: absolute;
                 top: 100%;
                 left: 0;
                 right: 0;
-                background: linear-gradient(180deg, $sidebar-bg 0%, var(--color-bg-tertiary) 100%);
-                border: 1px solid var(--color-border);
-                border-top: none;
+                background: none;
+                background-color: rgb(26, 35, 50);
+                border-bottom: 1px solid var(--color-border);
+                z-index: 2; // Higher than toggle button to appear above everything
                 box-shadow: 0 8px 24px var(--shadow-color);
                 animation: slideDownMobile 0.3s ease;
-                z-index: 1000;
-                max-height: 50vh;
+                max-height: fit-content;
                 overflow-y: auto;
-            }
-        }
+                padding: 0;
+                gap: 0;
 
-        .togglebutton {
-            width: auto;
-            height: 3rem;
-            padding: 0 1rem;
-            border: 1px solid var(--color-border);
-            border-radius: 0;
-            flex-shrink: 0;
+                .menuItem {
+                    border-top: none;
+                    // animation: slideDownMobile .5s ease;
+                    z-index: 1;
+                    opacity: 0;
+
+
+                    //animation-delay: .2s;
+                    &:last-child {
+                        border-bottom: none !important;
+                    }
+
+                    &:hover {
+                        background: linear-gradient(90deg, $hover-bg 0%, var(--color-hover) 100%);
+                        color: $text-color-active;
+                        border-left: 3px solid var(--color-accent);
+                        box-shadow: inset 0 0 0 1px var(--color-border-light);
+                    }
+                }
+            }
+
+
         }
 
         .menuItem {
-            margin: 0;
             border-left: none;
-            border-bottom: 1px solid var(--color-border-light);
-            
-            &:hover {
-                padding-left: 1rem;
-                border-left: none;
-                background: $hover-bg;
-            }
-            
-            &:last-child {
-                border-bottom: none;
-            }
+            border-bottom: 1px solid var(--color-border-light) !important;
+
+            pointer-events: auto !important;
+            //transform: none !important;
         }
+
+
+
     }
 }

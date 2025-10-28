@@ -22,7 +22,7 @@ export default function Application() {
         setIsDeleting(true);
 
         try {
-            console.log('🗑️ Deleting application:', applicationRecord.id);
+            //console.log('🗑️ Deleting application:', applicationRecord.id);
 
             const response = await fetch(`${backend}/api/applications/${applicationRecord.id}`, {
                 method: 'DELETE',
@@ -35,7 +35,7 @@ export default function Application() {
                 throw new Error(`Failed to delete application: ${response.status}`);
             }
 
-            console.log('✅ Application deleted successfully');
+            //console.log('✅ Application deleted successfully');
 
             // Navigate back to applications list after successful deletion
             navigate('/applications', {

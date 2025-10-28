@@ -33,7 +33,7 @@
         display: flex;
         flex-direction: column;
         margin: 0.5rem;
-        gap: 0.5em;
+        gap: 0.25em;
     }
 
     .formSection {
@@ -58,7 +58,7 @@
 @media screen and (max-width: 600px) {
     .applicationsContainer {
         margin: 0.25rem;
-        gap: 0.25em;
+        gap: 0em;
     }
 
     .formSection {
@@ -70,4 +70,14 @@
 
         gap: 0.5em;
     }
+}
+
+@media screen and (max-height: 753px) {
+
+    .applicationsContainer {
+        display: grid;
+        grid-template-rows: min-content min-content;
+        gap: 0;
+    }
+
 }

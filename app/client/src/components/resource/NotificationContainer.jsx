@@ -8,7 +8,6 @@ export default function NotificationContainer({ jobId, onJobStarted, onJobComple
     const [currentNotification, setCurrentNotification] = useState(null);
     const [hasShownInitialNotification, setHasShownInitialNotification] = useState(false);
     const [managedJobId, setManagedJobId] = useState(jobId);
-    const [isCheckingActiveJobs, setIsCheckingActiveJobs] = useState(true);
 
     const { accounts } = useMsal();
     const { status: jobStatus, error: jobError } = useJobStatus(managedJobId);
@@ -18,53 +17,75 @@ export default function NotificationContainer({ jobId, onJobStarted, onJobComple
     useEffect(() => {
         const checkForActiveJobs = async () => {
             try {
-                console.log('🔍 NotificationContainer checking for active jobs...');
+                //console.log('🔍 NotificationContainer checking for active jobs...');
 
                 const userEmail = accounts[0]?.username || accounts[0]?.name;
-                console.log('👤 User email:', userEmail);
+                //console.log('👤 User email:', userEmail);
+
+                if (!userEmail) {
+                    console.warn('⚠️ No user email found, skipping active job check');
+                    return;
+                }
+
+                // NORMALIZE EMAIL TO LOWERCASE
+                const normalizedEmail = userEmail.toLowerCase();
+                //console.log('👤 Normalized email:', normalizedEmail);
 
                 const response = await fetch(`${backend}/api/applications/active-jobs`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-User-Email': userEmail,
+                        'X-User-Email': normalizedEmail, // Use normalized email
                     },
                 });
 
                 if (response.ok) {
                     const result = await response.json();
-                    console.log('📋 Active jobs response:', result);
-                    const activeJobId = result.data?.mostRecentActiveJobId;
+                    //console.log('📋 Active jobs response:', result);
 
-                    if (activeJobId) {
-                        console.log('✅ Found active job, setting managedJobId:', activeJobId);
-                        setManagedJobId(activeJobId);
-                        setHasShownInitialNotification(true);
-                        if (onJobStarted) onJobStarted(activeJobId);
+                    // Check if this is the expected JobManager response format
+                    // The JobManager response has mostRecentActiveJobId at the top level, not nested under data
+                    if (result && typeof result === 'object' && 'mostRecentActiveJobId' in result) {
+                        const activeJobId = result.mostRecentActiveJobId; // Access directly, not result.data.mostRecentActiveJobId
+
+                        if (activeJobId) {
+                            //console.log('✅ Found active job, setting managedJobId:', activeJobId);
+                            setManagedJobId(activeJobId);
+                            setHasShownInitialNotification(true);
+                            if (onJobStarted) onJobStarted(activeJobId);
+                        } else {
+                            //console.log('ℹ️ No active jobs found');
+                        }
                     } else {
-                        console.log('ℹ️ No active jobs found');
+                        // This might be a LogicGate response instead of JobManager response
+                        console.warn('⚠️ Unexpected response format from active-jobs endpoint:', result);
+                        console.warn('⚠️ Expected JobManager format, but got something else');
+
+                        // Check if this looks like a LogicGate response
+                        if (result.content && Array.isArray(result.content)) {
+                            console.error('❌ Got LogicGate response instead of JobManager response!');
+                            console.error('❌ The /api/applications/active-jobs endpoint is not working correctly');
+                        }
                     }
                 } else {
-                    console.warn('⚠️ Failed to check active jobs:', response.status);
+                    console.warn('⚠️ Failed to check active jobs:', response.status, response.statusText);
+                    const errorText = await response.text();
+                    console.warn('⚠️ Error response:', errorText);
                 }
             } catch (error) {
                 console.error('❌ Error checking active jobs:', error);
-            } finally {
-                setIsCheckingActiveJobs(false);
             }
         };
 
         if (accounts.length > 0 && !managedJobId) {
             checkForActiveJobs();
-        } else {
-            setIsCheckingActiveJobs(false);
         }
     }, [accounts, backend, managedJobId, onJobStarted]);
 
     // Update managedJobId when parent passes new jobId
     useEffect(() => {
         if (jobId && jobId !== managedJobId) {
-            //console.log('📝 Received new jobId from parent:', jobId);
+            ////console.log('📝 Received new jobId from parent:', jobId);
             setManagedJobId(jobId);
             setHasShownInitialNotification(false);
             if (onJobStarted) onJobStarted(jobId);
@@ -147,13 +168,7 @@ export default function NotificationContainer({ jobId, onJobStarted, onJobComple
     };
 
     // Show loading state while checking for active jobs
-    if (isCheckingActiveJobs) {
-        return (
-            <div style={{ padding: '1rem', opacity: 0.7 }}>
-                <small>Checking for active jobs...</small>
-            </div>
-        );
-    }
+    
 
     // Don't render anything if no notification
     if (!currentNotification) {

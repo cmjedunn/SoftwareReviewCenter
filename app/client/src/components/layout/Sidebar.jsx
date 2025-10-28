@@ -14,10 +14,10 @@ const Sidebar = ({ children }) => {
         setIsCollapsed(true);
       }
     };
-    
+
     checkScreenSize();
     window.addEventListener('resize', checkScreenSize);
-    
+
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
@@ -65,8 +65,13 @@ const Sidebar = ({ children }) => {
 
     // For mobile, use different animation class and no delays
     if (isMobile) {
+      const delay = `${(index + 3) * 0.05}s`;
       return cloneElement(child, {
-        className: `${styles.menuItem} ${existingClass}`.trim(),
+        className: `${styles.menuItem} ${!isCollapsed ? styles.menuLinkAnimated : ''} ${existingClass}`.trim(),
+        style: {
+          ...child.props.style,
+          animationDelay: delay,
+        },
         onClick: handleMenuItemClick(child.props.onClick)
       });
     }
@@ -84,12 +89,12 @@ const Sidebar = ({ children }) => {
 
   return (
     <div className={`${styles.sidebar} ${isCollapsed ? styles.collapsed : ''}`}>
-      <button 
-        className={styles.togglebutton} 
+      <button
+        className={styles.togglebutton}
         onClick={toggleSidebar}
         aria-label={isMobile ? 'Toggle navigation menu' : 'Toggle sidebar'}
       >
-        ☰
+        <p>☰</p>
       </button>
       <nav className={styles.menu}>
         {animatedChildren}

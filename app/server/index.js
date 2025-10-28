@@ -5,7 +5,7 @@ import dotenv from 'dotenv';
 import { initTokenManager } from './auth/tokenManager.js';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
-import { JobManager } from './services/jobManager.js'; // We'll create this next
+import { JobManager } from './services/jobManager.js';
 
 dotenv.config();
 
@@ -44,22 +44,36 @@ wss.on('connection', (ws, req) => {
     // Extract user info from connection (you can add authentication here)
     const clientId = req.headers['client-id'] || `client-${Date.now()}`;
     
+    // REPLACE THIS SECTION with the enhanced message handler
     ws.on('message', (message) => {
         try {
             const data = JSON.parse(message.toString());
+            
+            // Handle ping/pong for keepalive
+            if (data.type === 'ping') {
+                ws.send(JSON.stringify({ type: 'pong' }));
+                console.log(`🏓 Ping/pong with client ${clientId}`);
+                return;
+            }
             
             if (data.type === 'subscribe' && data.jobId) {
                 // Subscribe client to job updates
                 jobManager.subscribeToJob(data.jobId, ws);
                 console.log(`📡 Client ${clientId} subscribed to job ${data.jobId}`);
                 
-                // Send current job status
+                // Send current job status immediately
                 const status = jobManager.getJobStatus(data.jobId);
                 if (status) {
                     ws.send(JSON.stringify({
-                        type: 'status',
+                        type: 'jobUpdate',  // Changed from 'status' to match client expectation
                         jobId: data.jobId,
-                        ...status
+                        status: status.status,
+                        progress: status.progress,
+                        position: status.position,
+                        message: status.message,
+                        result: status.status === 'completed' ? status.result : null,
+                        error: status.status === 'error' ? status.error : null,
+                        updatedAt: status.updatedAt
                     }));
                 }
             }
