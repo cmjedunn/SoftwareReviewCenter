@@ -18,10 +18,10 @@ export default function NotificationContainer({ jobId, onJobStarted, onJobComple
     useEffect(() => {
         const checkForActiveJobs = async () => {
             try {
-                console.log('🔍 NotificationContainer checking for active jobs...');
+                //console.log('🔍 NotificationContainer checking for active jobs...');
 
                 const userEmail = accounts[0]?.username || accounts[0]?.name;
-                console.log('👤 User email:', userEmail);
+                //console.log('👤 User email:', userEmail);
 
                 const response = await fetch(`${backend}/api/applications/active-jobs`, {
                     method: 'GET',
@@ -33,16 +33,16 @@ export default function NotificationContainer({ jobId, onJobStarted, onJobComple
 
                 if (response.ok) {
                     const result = await response.json();
-                    console.log('📋 Active jobs response:', result);
+                    //console.log('📋 Active jobs response:', result);
                     const activeJobId = result.data?.mostRecentActiveJobId;
 
                     if (activeJobId) {
-                        console.log('✅ Found active job, setting managedJobId:', activeJobId);
+                        //console.log('✅ Found active job, setting managedJobId:', activeJobId);
                         setManagedJobId(activeJobId);
                         setHasShownInitialNotification(true);
                         if (onJobStarted) onJobStarted(activeJobId);
                     } else {
-                        console.log('ℹ️ No active jobs found');
+                        //console.log('ℹ️ No active jobs found');
                     }
                 } else {
                     console.warn('⚠️ Failed to check active jobs:', response.status);
@@ -64,7 +64,7 @@ export default function NotificationContainer({ jobId, onJobStarted, onJobComple
     // Update managedJobId when parent passes new jobId
     useEffect(() => {
         if (jobId && jobId !== managedJobId) {
-            //console.log('📝 Received new jobId from parent:', jobId);
+            ////console.log('📝 Received new jobId from parent:', jobId);
             setManagedJobId(jobId);
             setHasShownInitialNotification(false);
             if (onJobStarted) onJobStarted(jobId);

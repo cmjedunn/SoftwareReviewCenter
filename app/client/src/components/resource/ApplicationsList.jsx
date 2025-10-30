@@ -1,59 +1,59 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useMsal } from '@azure/msal-react';
 import { Card } from '../layout/Card';
-import { LaserFlowCard } from '../layout/LaserFlow';
+import { LaserFlowCard, PlaceholderCard } from '../layout/LaserFlow';
 import styles from './styles/ApplicationsList.module.scss';
 import { useNavigate } from 'react-router-dom';
 
 
 // Placeholder card component for non-visible items
-const PlaceholderCard = ({ application, index, onLoadAnimation, onNavigate }) => {
-    const applicationName = String(application.name || `Application ${index + 1}`);
-    const assignee = application.assignee?.name || 'Unassigned';
+// const PlaceholderCard = ({ application, index, onLoadAnimation, onNavigate }) => {
+//     const applicationName = String(application.name || `Application ${index + 1}`);
+//     const assignee = application.assignee?.name || 'Unassigned';
 
-    // Extract maturity score using same logic as main cards
-    const maturityTierField = application.fields?.find(field =>
-        field.name === '[CALC] Current Year Average Control Maturity Tier'
-    );
-    const maturityScoreField = application.fields?.find(field =>
-        field.name === '[CALC] Overall Control Maturity Score'
-    );
+//     // Extract maturity score using same logic as main cards
+//     const maturityTierField = application.fields?.find(field =>
+//         field.name === '[CALC] Current Year Average Control Maturity Tier'
+//     );
+//     const maturityScoreField = application.fields?.find(field =>
+//         field.name === '[CALC] Overall Control Maturity Score'
+//     );
 
-    let maturityValue = maturityTierField?.values?.[0]?.numericValue ?? maturityTierField?.values?.[0]?.textValue;
-    if (maturityValue === null || maturityValue === undefined || maturityValue === 'null') {
-        maturityValue = maturityScoreField?.values?.[0]?.numericValue ?? maturityScoreField?.values?.[0]?.textValue;
-    }
+//     let maturityValue = maturityTierField?.values?.[0]?.numericValue ?? maturityTierField?.values?.[0]?.textValue;
+//     if (maturityValue === null || maturityValue === undefined || maturityValue === 'null') {
+//         maturityValue = maturityScoreField?.values?.[0]?.numericValue ?? maturityScoreField?.values?.[0]?.textValue;
+//     }
 
-    const hasMaturityData = maturityValue !== null && maturityValue !== undefined && maturityValue !== 'null';
-    const displayScore = hasMaturityData ? maturityValue : '0';
+//     const hasMaturityData = maturityValue !== null && maturityValue !== undefined && maturityValue !== 'null';
+//     const displayScore = hasMaturityData ? maturityValue : '0';
 
-    const handleClick = (e) => {
-        // If Ctrl/Cmd is held, load animation instead of navigating
-        if (e.ctrlKey || e.metaKey) {
-            onLoadAnimation();
-        } else {
-            onNavigate();
-        }
-    };
+//     const handleClick = (e) => {
+//         // If Ctrl/Cmd is held, load animation instead of navigating
+//         if (e.ctrlKey || e.metaKey) {
+//             onLoadAnimation();
+//         } else {
+//             onNavigate();
+//         }
+//     };
 
-    return (
-        <div
-            className={styles.placeholderCard}
-            onClick={handleClick}
-            style={{
-                height: "100 %",
-                width: "100 %"
-            }}
-            title="Click to view • Ctrl+Click to load animation"
-        >
-            <Card>
-                <h3>{applicationName}</h3>
-                <p>Assignee: {assignee}</p>
-                <p>Maturity: {displayScore}</p>
-            </Card>
-        </div>
-    );
-};
+//     return (
+//         <div
+//             className={styles.placeholderCard}
+//             onClick={handleClick}
+//             style={{
+//                 'max-height': '250px',
+//                 width: "100 %"
+//             }}
+//             title="Click to view • Ctrl+Click to load animation"
+//         >
+//             <Card>
+//                 <h3>{applicationName}</h3>
+//                 <p>Assignee: {assignee}</p>
+//                 <p>Maturity: {displayScore}</p>
+//             </Card>
+//         </div>
+//     );
+// };
 
 // Search component with "Assigned to Me" filter
 const SearchBar = ({ searchTerm, onSearchChange, assignedToMeFilter, onAssignedToMeChange, resultCount, currentUserEmail }) => {
@@ -286,30 +286,6 @@ export default function ApplicationsList() {
         }
     }, []);
 
-    const handleCardClick = (index) => {
-        setVisibleCards(prev => {
-            const newVisible = new Set(prev);
-
-            // If already at limit, remove oldest card
-            if (newVisible.size >= MAX_VISIBLE_CARDS && !newVisible.has(index)) {
-                const currentVisibleArray = visibleCardsArrayRef.current;
-                const oldestIndex = currentVisibleArray.shift();
-                if (oldestIndex !== undefined) {
-                    newVisible.delete(oldestIndex);
-                }
-            }
-
-            newVisible.add(index);
-
-            // Update tracking array
-            if (!visibleCardsArrayRef.current.includes(index)) {
-                visibleCardsArrayRef.current.push(index);
-            }
-
-            return newVisible;
-        });
-    };
-
     const handleApplicationClick = (application) => {
         if (application) {
             navigate(`/applications/${application.id}`, {
@@ -436,10 +412,13 @@ export default function ApplicationsList() {
                                     />
                                 ) : (
                                     <PlaceholderCard
-                                        application={application}
-                                        index={index}
-                                        onLoadAnimation={() => handleCardClick(index)}
-                                        onNavigate={() => handleApplicationClick(application)}
+                                        title={applicationName}
+                                        description={`Assigned to ${application.assignee?.name || 'Unassigned'}`}
+                                        metricValue={maturityScore}
+                                        metricLabel="Maturity Score"
+                                        theme={theme}
+                                        onClick={() => handleApplicationClick(application)}
+                                        style={{ cursor: 'pointer' }}
                                     />
                                 )}
                             </div>

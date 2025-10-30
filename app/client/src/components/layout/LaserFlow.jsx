@@ -782,3 +782,149 @@ export const LaserFlowCard = ({
     </div>
   );
 };
+
+export const PlaceholderCard = ({
+  // Generic content props
+  title,
+  description,
+  metricValue,
+  metricLabel,
+  onClick,
+  // Application record specific props
+  applicationName,
+  environment,
+  recordCount,
+  className = "",
+  // Size control props
+  width,
+  height,
+  minWidth,
+  maxWidth,
+  minHeight,
+  maxHeight,
+  size, // "small", "medium", "large", "xl"
+  // Theme
+  theme = "cyan"
+}) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const cardRef = useRef(null);
+
+  // Determine what to display (must come before useEffect)
+  const displayTitle = applicationName || title;
+  const displayDescription = environment || description;
+  const displayMetricValue = recordCount !== undefined
+    ? (typeof recordCount === 'number' ? recordCount.toLocaleString() : recordCount)
+    : metricValue;
+  const displayMetricLabel = recordCount !== undefined ? "Controls" : metricLabel;
+
+  // Theme color definitions for CSS custom properties
+  const themeStyles = {
+    purple: {
+      '--laser-color': '#8b5cf6',
+      '--glow-color-30': 'rgba(139, 92, 246, 0.3)',
+      '--glow-color-20': 'rgba(139, 92, 246, 0.2)',
+      '--accent-color': '#c084fc',
+      '--secondary-text-color': '#ddd6fe',
+      '--metric-bg-color': 'rgba(139, 92, 246, 0.2)'
+    },
+    blue: {
+      '--laser-color': '#3b82f6',
+      '--glow-color-30': 'rgba(59, 130, 246, 0.3)',
+      '--glow-color-20': 'rgba(59, 130, 246, 0.2)',
+      '--accent-color': '#60a5fa',
+      '--secondary-text-color': '#dbeafe',
+      '--metric-bg-color': 'rgba(59, 130, 246, 0.2)'
+    },
+    cyan: {
+      '--laser-color': '#00ffff',
+      '--glow-color-30': 'rgba(0, 255, 255, 0.3)',
+      '--glow-color-20': 'rgba(0, 255, 255, 0.2)',
+      '--accent-color': '#22d3ee',
+      '--secondary-text-color': '#cffafe',
+      '--metric-bg-color': 'rgba(34, 211, 238, 0.2)'
+    },
+    green: {
+      '--laser-color': '#10b981',
+      '--glow-color-30': 'rgba(16, 185, 129, 0.3)',
+      '--glow-color-20': 'rgba(16, 185, 129, 0.2)',
+      '--accent-color': '#34d399',
+      '--secondary-text-color': '#d1fae5',
+      '--metric-bg-color': 'rgba(16, 185, 129, 0.2)'
+    },
+    red: {
+      '--laser-color': '#ef4444',
+      '--glow-color-30': 'rgba(239, 68, 68, 0.3)',
+      '--glow-color-20': 'rgba(239, 68, 68, 0.2)',
+      '--accent-color': '#f87171',
+      '--secondary-text-color': '#fecaca',
+      '--metric-bg-color': 'rgba(239, 68, 68, 0.2)'
+    },
+    orange: {
+      '--laser-color': '#f97316',
+      '--glow-color-30': 'rgba(249, 115, 22, 0.3)',
+      '--glow-color-20': 'rgba(249, 115, 22, 0.2)',
+      '--accent-color': '#fb923c',
+      '--secondary-text-color': '#fed7aa',
+      '--metric-bg-color': 'rgba(249, 115, 22, 0.2)'
+    }
+  };
+
+  const currentThemeStyles = themeStyles[theme] || themeStyles.cyan;
+
+  // Size presets
+  const sizePresets = {
+    small: { width: '280px', height: '200px' },
+    medium: { width: '350px', height: '250px' },
+    large: { width: '420px', height: '300px' },
+    xl: { width: '500px', height: '350px' }
+  };
+
+  // Build combined styles object
+  const combinedStyles = {
+    ...currentThemeStyles,
+    // Size controls
+    ...(size && sizePresets[size]),
+    ...(width && { width }),
+    ...(height && { height }),
+    ...(minWidth && { minWidth }),
+    ...(maxWidth && { maxWidth }),
+    ...(minHeight && { minHeight }),
+    ...(maxHeight && { maxHeight })
+  };
+
+  // Build theme class name safely
+  const themeClass = styles[`theme-${theme}`];
+
+  return (
+    <div
+      ref={cardRef}
+      className={`${styles.card} ${themeClass || ''} ${isHovered ? styles.cardHovered : ''} ${className}`}
+      style={combinedStyles}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onClick={onClick}  // ✅ ADD THIS LINE - Forward the onClick prop
+      role="button"      // ✅ Optional: Add for accessibility
+      tabIndex={0}       // ✅ Optional: Make it keyboard focusable
+    >
+
+      {/* Content */}
+      <div className={styles.cardContent}>
+        {displayTitle && <h3 className={styles.title}>{displayTitle}</h3>}
+        {displayDescription && <p className={styles.description}>{displayDescription}</p>}
+
+        {(displayMetricValue !== undefined || displayMetricLabel) && (
+          <div className={styles.metricContainer}>
+            <div className={styles.metricBox} data-metric-box="true">
+              {displayMetricValue !== undefined && (
+                <div className={styles.metricValue}>{displayMetricValue}</div>
+              )}
+              {displayMetricLabel && (
+                <div className={styles.metricLabel}>{displayMetricLabel}</div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};

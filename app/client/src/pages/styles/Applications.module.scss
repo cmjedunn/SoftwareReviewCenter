@@ -9,6 +9,7 @@
     margin: 1em;
     gap: 1em;
     max-width: 100%;
+    overflow-y: auto;
 }
 
 .formSection {
@@ -28,10 +29,19 @@
 }
 
 // Responsive design
+
+@media screen and ((max-width: 768px)) {
+    .applicationsContainer {
+        display: grid !important;
+        grid-template-rows: min-content min-content;
+    }
+}
+
 @media screen and ((max-width: 768px) or (max-height: 600px)) {
     .applicationsContainer {
-        display: flex;
-        flex-direction: column;
+        display: grid;
+        grid-template-rows: min-content min-content;
+        gap: 0;
         margin: 0.5rem;
         gap: 0.25em;
     }
@@ -50,7 +60,7 @@
         height: 100%; // List section takes remaining space
         margin: 0;
         gap: 0.5em;
-        min-height: 50vh; // Ensure minimum height for list
+        //min-height: 50vh; // Ensure minimum height for list
         overflow: hidden; // Let ApplicationsList handle its own scrolling
     }
 }

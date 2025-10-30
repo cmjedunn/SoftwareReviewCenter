@@ -12,7 +12,7 @@ export default function Navbar() {
 
             <Link to="/" className={styles.logo}>
                 <img src={logo} alt="Logo" />
-                <p>Software Review Manager</p>
+                <p>Software Review Center</p>
             </Link>
             <div className={styles.navlinks}>
                 {/* <ul>

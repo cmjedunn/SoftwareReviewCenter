@@ -1,7 +1,7 @@
 # # # # # # # # # # # # # #
 # Stage 1: Build Frontend #
 # # # # # # # # # # # # # #
-FROM node:20 as frontend-build
+FROM node:20 AS frontend-build
 
 # Copy trusted certs so it works
 COPY ./trusted_certs.crt /usr/local/share/ca-certificates/trusted_certs.crt
@@ -51,7 +51,7 @@ RUN npm run build
 # # # # # # # # # # # # # #
 # Stage 2: Build Backend  #
 # # # # # # # # # # # # # #
-FROM node:20 as backend-build
+FROM node:20 AS backend-build
 
 # Copy trusted certs so it works
 COPY ./trusted_certs.crt /usr/local/share/ca-certificates/trusted_certs.crt
