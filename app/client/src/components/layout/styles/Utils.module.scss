@@ -36,13 +36,11 @@
     flex: 1;
     justify-content: center;
     align-items: center;
-   
 }
 
 @media screen and (max-width: 768px) {
     .unauthorized {
         margin: .75rem;
-       
     }
 }
 
@@ -52,9 +50,6 @@
         // Change to column layout so sidebar can be horizontal on top
         flex-direction: column;
         flex: 1;
-
     }
-
-
 }
 

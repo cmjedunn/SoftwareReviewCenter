@@ -1,19 +1,24 @@
 import { useState, useEffect } from 'react';
 import FormCard from '../layout/FormCard';
+import { authenticatedFetch } from '../../services/authService.js';
 
-export default function AddApplicationForm({ onJobStarted = () => {}, isSubmitDisabled = false }) {
+
+export default function AddApplicationForm({ onJobStarted = () => { }, isSubmitDisabled = false }) {
     const backend = import.meta.env.VITE_BACKEND_URL || "";
 
     const [environments, setEnvironments] = useState([]);
 
     useEffect(() => {
-        fetch(`${backend}/api/environments`)
+        authenticatedFetch(`${backend}/api/environments`)
             .then(res => res.json())
             .then(data => {
-                const envArray = Array.isArray(data) ? data : data.content || [];
+                const envArray = Array.isArray(data) ? data : data.data || [];
                 setEnvironments(envArray);
             })
-            .catch(console.error);
+            .catch(error => {
+                console.error('Failed to fetch environments:', error);
+                setEnvironments([]);
+            });
     }, [backend]);
 
     const handleFormSubmit = async (formData) => {
@@ -91,7 +96,7 @@ export default function AddApplicationForm({ onJobStarted = () => {}, isSubmitDi
             fields={applicationFields}
             submitButtonText="Submit"
             clearButtonText="Clear Form"
-            isSubmitDisabled={isSubmitDisabled} 
+            isSubmitDisabled={isSubmitDisabled}
         />
     );
 }

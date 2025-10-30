@@ -1,14 +1,14 @@
-// Self-managing NotificationContainer that handles its own job persistence
 import { useState, useEffect } from 'react';
 import { useMsal } from '@azure/msal-react';
 import { SuccessNotificationCard, ProgressNotificationCard, ErrorNotificationCard } from './NotificationCard';
 import { useJobStatus } from '../../hooks/useJobStatus';
+import { authenticatedFetch } from '../../services/authService.js';
+
 
 export default function NotificationContainer({ jobId, onJobStarted, onJobCompleted }) {
     const [currentNotification, setCurrentNotification] = useState(null);
     const [hasShownInitialNotification, setHasShownInitialNotification] = useState(false);
     const [managedJobId, setManagedJobId] = useState(jobId);
-    const [isCheckingActiveJobs, setIsCheckingActiveJobs] = useState(true);
 
     const { accounts } = useMsal();
     const { status: jobStatus, error: jobError } = useJobStatus(managedJobId);
@@ -23,10 +23,9 @@ export default function NotificationContainer({ jobId, onJobStarted, onJobComple
                 const userEmail = accounts[0]?.username || accounts[0]?.name;
                 //console.log('👤 User email:', userEmail);
 
-                const response = await fetch(`${backend}/api/applications/active-jobs`, {
+                const response = await authenticatedFetch(`${backend}/api/applications/active-jobs`, {
                     method: 'GET',
                     headers: {
-                        'Content-Type': 'application/json',
                         'X-User-Email': userEmail,
                     },
                 });
@@ -49,15 +48,11 @@ export default function NotificationContainer({ jobId, onJobStarted, onJobComple
                 }
             } catch (error) {
                 console.error('❌ Error checking active jobs:', error);
-            } finally {
-                setIsCheckingActiveJobs(false);
             }
         };
 
         if (accounts.length > 0 && !managedJobId) {
             checkForActiveJobs();
-        } else {
-            setIsCheckingActiveJobs(false);
         }
     }, [accounts, backend, managedJobId, onJobStarted]);
 
@@ -145,14 +140,6 @@ export default function NotificationContainer({ jobId, onJobStarted, onJobComple
         if (onJobCompleted) onJobCompleted();
     };
 
-    // Show loading state while checking for active jobs
-    if (isCheckingActiveJobs) {
-        return (
-            <div style={{ padding: '1rem', opacity: 0.7 }}>
-                <small>Checking for active jobs...</small>
-            </div>
-        );
-    }
 
     // Don't render anything if no notification
     if (!currentNotification) {

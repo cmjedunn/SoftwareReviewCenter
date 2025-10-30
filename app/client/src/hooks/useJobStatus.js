@@ -1,6 +1,6 @@
-// Enhanced useJobStatus.js with aggressive reconnection and polling fallback
-
+import { authenticatedFetch } from '../services/authService.js';
 import { useState, useEffect, useRef } from 'react';
+
 
 export function useJobStatus(jobId) {
     const [status, setStatus] = useState(null);
@@ -162,8 +162,8 @@ export function useJobStatus(jobId) {
         const checkJobStatusAndReconnect = async () => {
             try {
                 const backend = import.meta.env.VITE_BACKEND_URL || "";
-                const response = await fetch(`${backend}/api/applications/jobs/${jobId}`);
-
+                const response = await authenticatedFetch(`${backend}/api/applications/jobs/${jobId}`);
+                
                 if (response.ok) {
                     const result = await response.json();
                     const jobData = result.data;
