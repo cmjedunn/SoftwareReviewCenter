@@ -1,14 +1,14 @@
-import { getToken } from '../../utils/getToken.js';
-import { logRequest } from '../../utils/logRequest.js';
-import { createErrorResponse } from '../../utils/createErrorResponse.js';
-import { createSuccessResponse } from '../../utils/createSuccessResponse.js';
-import { getWorkflowData, getWorkflowsData } from '../../workflows/workflows.controller.js';
-import { getRecordV1 } from '../../utils/getRecordV1.js';
-import { deleteRecordData, getLinkedRecordsData, getRecordsData } from '../records.controller.js';
-import { getEnvironmentControlFrameworksData } from '../environmentRecords/environmentRecords.controller.js';
-import { updateControlRecordData, submitControlRecordData } from '../controlRecords/controlRecords.controller.js';
-import { controllerLimiter } from '../../../utils/limiter.js';
-import { JobManager } from '../../../services/jobManager.js';
+import { getToken } from '../utils/getToken.js';
+import { logRequest } from '../utils/logRequest.js';
+import { createErrorResponse } from '../utils/createErrorResponse.js';
+import { createSuccessResponse } from '../utils/createSuccessResponse.js';
+import { getWorkflowData, getWorkflowsData } from '../workflows/workflows.controller.js';
+import { getRecordV1 } from '../utils/getRecordV1.js';
+import { deleteRecordData, getLinkedRecordsData, getRecordsData } from '../records/records.controller.js';
+import { getEnvironmentControlFrameworksData } from '../environments/environmentRecords.controller.js';
+import { updateControlRecordData, submitControlRecordData } from '../controls/controlRecords.controller.js';
+import { controllerLimiter } from '../../utils/limiter.js';
+import { JobManager } from '../../services/jobManager.js';
 
 
 const ENV = process.env.LOGICGATE_ENV;

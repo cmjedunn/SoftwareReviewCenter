@@ -1,9 +1,9 @@
-import { getToken } from '../../utils/getToken.js';
-import { logRequest } from '../../utils/logRequest.js';
-import { createErrorResponse } from '../../utils/createErrorResponse.js';
-import { createSuccessResponse } from '../../utils/createSuccessResponse.js';
-import { getWorkflowData, getWorkflowsData } from '../../workflows/workflows.controller.js';
-import { getRecordsData } from '../records.controller.js';
+import { getToken } from '../utils/getToken.js';
+import { logRequest } from '../utils/logRequest.js';
+import { createErrorResponse } from '../utils/createErrorResponse.js';
+import { createSuccessResponse } from '../utils/createSuccessResponse.js';
+import { getWorkflowData, getWorkflowsData } from '../workflows/workflows.controller.js';
+import { getRecordsData } from '../records/records.controller.js';
 
 const ENV = process.env.LOGICGATE_ENV;
 const BASE_URL = `https://${ENV}.logicgate.com`;

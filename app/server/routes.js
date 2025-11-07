@@ -5,9 +5,9 @@ import { fileURLToPath } from 'url';
 // Import Endpoint Routes
 import recordRoutes from './api/records/records.routes.js';
 import workflowRoutes from './api/workflows/workflows.routes.js'
-import applicationRecordRoutes from './api/records/applicationRecords/applicationRecords.routes.js'
-import environmentRoutes from './api/records/environmentRecords/environmentRecords.routes.js';
-import controlRoutes from './api/records/controlRecords/controlRecords.routes.js';
+import applicationRecordRoutes from './api/applications/applicationRecords.routes.js'
+import environmentRoutes from './api/environments/environmentRecords.routes.js';
+import controlRoutes from './api/controls/controlRecords.routes.js';
 
 export default function initRoutes(app) {
     const __filename = fileURLToPath(import.meta.url);

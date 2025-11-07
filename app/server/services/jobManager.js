@@ -148,7 +148,7 @@ class JobManager {
      */
     async processCreateApplicationRecord(jobId, { name, owner, description, environment }, progressCallback) {
         // Import your existing wrapped function (with rate limiting)
-        const { createApplicationRecordData } = await import('../api/records/applicationRecords/applicationRecords.controller.js');
+        const { createApplicationRecordData } = await import('../api/records/applications/applicationRecords.controller.js');
 
         progressCallback(25, 'Creating application record...');
 
@@ -162,7 +162,7 @@ class JobManager {
      * 🗑️ Process application record deletion
      */
     async processDeleteApplicationRecord(jobId, { recordId }, progressCallback) {
-        const { deleteApplicationRecordData } = await import('../api/records/applicationRecords/applicationRecords.controller.js');
+        const { deleteApplicationRecordData } = await import('../api/records/applications/applicationRecords.controller.js');
 
         progressCallback(50, 'Deleting application record...');
 
