@@ -2,10 +2,13 @@ import { useState, useEffect } from 'react';
 import { useMsal } from '@azure/msal-react';
 import { SuccessNotificationCard, ProgressNotificationCard, ErrorNotificationCard } from './NotificationCard';
 import { useJobStatus } from '../../hooks/useJobStatus';
-import { authenticatedFetch } from '../../services/authService.js';
+import { useAuthenticatedFetch } from '../../hooks/useAutheticatedFetch';
 
 
 export default function NotificationContainer({ jobId, onJobStarted, onJobCompleted }) {
+
+    const fetch = useAuthenticatedFetch();
+
     const [currentNotification, setCurrentNotification] = useState(null);
     const [hasShownInitialNotification, setHasShownInitialNotification] = useState(false);
     const [managedJobId, setManagedJobId] = useState(jobId);
@@ -23,7 +26,7 @@ export default function NotificationContainer({ jobId, onJobStarted, onJobComple
                 const userEmail = accounts[0]?.username || accounts[0]?.name;
                 //console.log('👤 User email:', userEmail);
 
-                const response = await authenticatedFetch(`${backend}/api/applications/active-jobs`, {
+                const response = await fetch(`${backend}/api/applications/active-jobs`, {
                     method: 'GET',
                     headers: {
                         'X-User-Email': userEmail,

@@ -4,14 +4,18 @@ import { PageWrapper, AuthContent } from '../components/layout/Utils';
 import { Card } from '../components/layout/Card';
 import DeleteButton from '../components/layout/DeleteButton'; // Import the new component
 import styles from './styles/Application.module.scss';
-import { authenticatedFetch } from '../services/authService.js';
+import { useAuthenticatedFetch } from '../hooks/useAutheticatedFetch';
 
 
 export default function Application() {
+
+    const fetch = useAuthenticatedFetch();
+
     const location = useLocation();
     const { id } = useParams();
     const navigate = useNavigate();
     const [isDeleting, setIsDeleting] = useState(false);
+
 
     // Get the application from navigation state
     const applicationRecord = location.state?.application;
@@ -26,7 +30,7 @@ export default function Application() {
         try {
             //console.log('🗑️ Deleting application:', applicationRecord.id);
 
-            const response = await authenticatedFetch(`${backend}/api/applications/${applicationRecord.id}`, {
+            const response = await fetch(`${backend}/api/applications/${applicationRecord.id}`, {
                 method: 'DELETE',
             });
 

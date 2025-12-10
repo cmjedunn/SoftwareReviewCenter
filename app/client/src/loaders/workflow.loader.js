@@ -1,8 +1,10 @@
-import { authenticatedFetch } from '../services/authService.js';
+import { createAuthenticatedLoader } from '../utils/createAuthenticatedLoader.js';
+
+
 const backend = import.meta.env.VITE_BACKEND_URL || "";
 
-export async function load_one( {params} ) {
-     const res = await authenticatedFetch(`${backend}/api/workflows/${params.id}`);
+async function load_one_internal({ params, authenticatedFetch }) {
+    const res = await authenticatedFetch(`${backend}/api/workflows/${params.id}`);
     if (!res.ok) {
         throw new Response("Failed to load resource.", { status: res.status });
     }
@@ -10,7 +12,7 @@ export async function load_one( {params} ) {
     return { resourse: data };
 }
 
-export async function load_all() {
+async function load_all_internal({ authenticatedFetch }) {
     const res = await authenticatedFetch(`${backend}/api/*ENDPOINT HERE*`);
     if (!res.ok) {
         throw new Response("Failed to load resources.", { status: res.status });
@@ -18,3 +20,6 @@ export async function load_all() {
     const data = await res.json();
     return { resourse: data };
 }
+
+export const load_one = createAuthenticatedLoader(load_one_internal);
+export const load_all = createAuthenticatedLoader(load_all_internal);

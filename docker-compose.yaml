@@ -16,20 +16,31 @@ services:
       DB_URL: #mongo db url here
       PORT: 3000
       NODE_ENV: production
+      
+      # LogicGate Configuration
       LOGICGATE_CLIENT_KEY: YXRoZW5ldW06aGppcU10M0I6RVhURVJOQUw=
       LOGICGATE_CLIENT_SECRET: oeIIKNzEQBH4BUadzWlbKUUj9Ioa9qk1
       LOGICGATE_ENV: atheneum
       LOGFILES_ENABLED: true
       APPLICATIONS_ID: CJWJnLUS
       SCF_ID: 8ln56X6y
+      
+      # Certificate Authentication Configuration
+      ENTRA_CERT_PATH: "/app/certs/security-review-center.pfx"
+      ENTRA_CERT_PASSWORD: "SecureJEDunnSRC2024!"
+      ENTRA_AUTH_MODE: "certificate"
+      ENTRA_CLIENT_ID: "f0e2a1b0-5ff6-4b69-8dc8-4d09e4905133"
+      ENTRA_TENANT_ID: "e5e66f9b-9af2-47a3-8179-53be49b04490"
+      
     ports:
       - "3000:3000"
     restart: unless-stopped
     volumes:
       - token-cache:/app/token-cache
       - ./trusted_certs.crt:/usr/local/share/ca-certificates/trusted_certs.crt
+      # Add certificate volume
+      - ./certs/docker/security-review-center.pfx:/app/certs/security-review-center.pfx:ro
 
 volumes:
   mongo-data:
   token-cache:
-

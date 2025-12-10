@@ -75,6 +75,9 @@ COPY app/server/ ./
 # Copy the built frontend from the first stage
 COPY --from=frontend-build /app/server/public ./public
 
+# Create certificate directory and set permissions
+RUN mkdir -p /app/certs && chmod 700 /app/certs
+
 # Expose and run
 EXPOSE 3000
 CMD ["node", "index.js"]

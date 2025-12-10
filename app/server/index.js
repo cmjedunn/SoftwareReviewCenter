@@ -1,14 +1,14 @@
-// app/server/index.js
 import initRoutes from './routes.js';
 import express from 'express';
 import cors from "cors";
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
+import jwt from 'jsonwebtoken';
 import { initTokenManager } from './auth/tokenManager.js';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
 import { JobManager } from './services/jobManager.js';
-import { authenticateToken, healthCheck } from './middleware/authMiddleware.js';
+import { authenticateToken, authenticateWebSocketToken ,healthCheck } from './middleware/authMiddleware.js';
 
 dotenv.config();
 
@@ -60,11 +60,11 @@ initRoutes(app);
 // Global error handler
 app.use((err, req, res, _next) => {
     console.error('🚨 Global error handler:', err);
-    
+
     // Don't expose internal error details in production
     const isDev = process.env.NODE_ENV === 'development';
-    
-    res.status(err.status || 500).json({ 
+
+    res.status(err.status || 500).json({
         error: isDev ? err.toString() : 'Internal server error',
         code: err.code || 'INTERNAL_ERROR',
         ...(isDev && { stack: err.stack })
@@ -78,30 +78,23 @@ const server = createServer(app);
 const jobManager = JobManager.getInstance();
 
 // Create WebSocket server
-const wss = new WebSocketServer({ 
+const wss = new WebSocketServer({
     server,
     path: '/ws'
 });
 
-// WebSocket authentication middleware
 const authenticateWebSocket = async (ws, req) => {
     try {
-        // Extract token from query parameters or headers
         const url = new URL(req.url, 'http://localhost');
-        const token = url.searchParams.get('token') || req.headers.authorization?.split(' ')[1];
+        const token = url.searchParams.get('token');
         
-        if (!token) {
-            ws.close(1008, 'Authentication token required');
-            return null;
-        }
-
-        // You can reuse the same token verification logic here
-        // For simplicity, we'll assume the token is valid
-        // In production, you should validate it properly
+        // Use the same Microsoft validation as HTTP endpoints
+        const authResult = await authenticateWebSocketToken(token);
         
-        return { token, userId: 'websocket-user' };
+        return { token, userId: authResult.userId };
+        
     } catch (error) {
-        console.error('WebSocket authentication error:', error);
+        console.error('❌ WebSocket authentication failed:', error.message);
         ws.close(1008, 'Authentication failed');
         return null;
     }
@@ -110,33 +103,33 @@ const authenticateWebSocket = async (ws, req) => {
 // Handle WebSocket connections with authentication
 wss.on('connection', async (ws, req) => {
     console.log('🔌 New WebSocket connection attempt');
-    
+
     // Authenticate WebSocket connection
     const authResult = await authenticateWebSocket(ws, req);
     if (!authResult) {
         return; // Connection already closed
     }
-    
+
     console.log('✅ WebSocket authenticated for user:', authResult.userId);
-    
+
     const clientId = req.headers['client-id'] || `client-${Date.now()}`;
-    
+
     ws.on('message', (message) => {
         try {
             const data = JSON.parse(message.toString());
-            
+
             // Handle ping/pong for keepalive
             if (data.type === 'ping') {
                 ws.send(JSON.stringify({ type: 'pong' }));
                 console.log(`🏓 Ping/pong with client ${clientId}`);
                 return;
             }
-            
+
             if (data.type === 'subscribe' && data.jobId) {
                 // Subscribe client to job updates
                 jobManager.subscribeToJob(data.jobId, ws);
                 console.log(`📡 Client ${clientId} subscribed to job ${data.jobId}`);
-                
+
                 // Send current job status immediately
                 const status = jobManager.getJobStatus(data.jobId);
                 if (status) {
@@ -163,7 +156,7 @@ wss.on('connection', async (ws, req) => {
 
     ws.on('close', () => {
         console.log(`🔌 Client ${clientId} disconnected`);
-        jobManager.unsubscribeClient(ws);
+        jobManager.removeClient(ws);
     });
 });
 

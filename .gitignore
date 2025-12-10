@@ -6,4 +6,8 @@ app/server/public/*
 app/server/node_modules
 # app/server/token-cache/*
 app/server/logs/*
-# trusted_certs.crt
+trusted_certs.crt
+certificate-validation-script.sh
+production-cert-script.sh
+azure_portal_setup_guide.md
+certs

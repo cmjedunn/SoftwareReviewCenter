@@ -1,18 +1,19 @@
 import { useState, useEffect } from 'react';
 import FormCard from '../layout/FormCard';
-import { authenticatedFetch } from '../../services/authService.js';
-
+import { useAuthenticatedFetch } from '../../hooks/useAutheticatedFetch';
 
 export default function AddApplicationForm({ onJobStarted = () => { }, isSubmitDisabled = false }) {
-    const backend = import.meta.env.VITE_BACKEND_URL || "";
 
+    const fetch = useAuthenticatedFetch();
+
+    const backend = import.meta.env.VITE_BACKEND_URL || "";
     const [environments, setEnvironments] = useState([]);
 
     useEffect(() => {
-        authenticatedFetch(`${backend}/api/environments`)
+        fetch(`${backend}/api/environments`)
             .then(res => res.json())
             .then(data => {
-                const envArray = Array.isArray(data) ? data : data.data || [];
+                const envArray = Array.isArray(data) ? data : data.content || [];
                 setEnvironments(envArray);
             })
             .catch(error => {

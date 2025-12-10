@@ -4,6 +4,7 @@ import { Card } from '../layout/Card';
 import { LaserFlowCard, PlaceholderCard } from '../layout/LaserFlow';
 import styles from './styles/ApplicationsList.module.scss';
 import { useNavigate } from 'react-router-dom';
+import { useAuthenticatedFetch } from '../../hooks/useAutheticatedFetch';
 
 
 // Placeholder card component for non-visible items
@@ -113,6 +114,8 @@ export default function ApplicationsList() {
     const observerRef = useRef(null);
     const cardRefs = useRef(new Map());
     const navigate = useNavigate();
+    const fetch = useAuthenticatedFetch();
+    
 
 
     // Get current user from MSAL
