@@ -1,59 +1,143 @@
 // Application.module.scss
 // Styles for the individual application page
 
+.pageLayout {
+    display: flex;
+    flex-direction: row;
+    height: 100%;
+    gap: 0;
+    min-height: 0;
+    width: 100%;
+    padding: 1em; // Add padding to container instead of margin on cards
+    box-sizing: border-box;
+}
+
 .appCard {
     display: flex;
     flex-direction: column;
     flex: 1;
     padding: 1em;
-    max-height: 100%;
-    margin: 1em;
+    margin: 0 0.5em; // Remove top/bottom margin, keep horizontal spacing
+    min-height: 0;
+    height: 100%; // Fill height of container
+    width: 50%; // Each card takes 50% width
+    max-width: 50%;
+    box-sizing: border-box; // Include padding in dimensions
 }
 
 .applicationContent {
     flex: 1;
     display: flex;
     flex-direction: column;
-    padding: 1.5rem;
-    gap: 1.5rem;
+    padding: 0;
+    gap: 0;
+    min-height: 0; // Important for flex children
 }
 
 .applicationHeader {
     display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid var(--color-border);
-    gap: 2rem;
+    flex-direction: column;
+    gap: 1.25rem;
+    padding: 1.5rem;
 }
 
 .applicationInfo {
-    flex: 1;
-    
-    h2 {
-        margin: 0 0 1rem 0;
-        color: var(--color-text-primary);
-        font-size: var(--fs-600, 1.5rem);
-        font-weight: 600;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+
+    @media screen and (max-width: 768px) {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+}
+
+.infoItem {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.75rem;
+    background: var(--color-bg-tertiary, rgba(20, 20, 30, 0.3));
+    border-radius: 8px;
+    border: 1px solid var(--color-border, rgba(255, 255, 255, 0.05));
+    transition: all 0.2s ease;
+
+    &:hover {
+        background: var(--color-bg-secondary, rgba(30, 30, 40, 0.4));
+        border-color: var(--color-accent, #3b82f6);
+        transform: translateY(-1px);
     }
 
-    p {
-        margin: 0.5rem 0;
-        color: var(--color-text-secondary);
-        font-size: var(--fs-400, 1rem);
-        
-        strong {
-            color: var(--color-text-primary);
-            font-weight: 500;
-        }
+    strong {
+        color: var(--color-text-tertiary, #9ca3af);
+        font-size: var(--fs-350, 0.875rem);
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
+
+    span {
+        color: var(--color-text-primary);
+        font-size: var(--fs-400, 1rem);
+        font-weight: 500;
+    }
+}
+
+// Maturity score styling with color themes
+.maturityScore {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 1rem;
+    text-align: right;
+    transition: all 0.2s ease;
+}
+
+// Color themes matching ApplicationsList cards
+.maturity-red {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.maturity-orange {
+    background: rgba(249, 115, 22, 0.2);
+    color: #fb923c;
+    border: 1px solid rgba(249, 115, 22, 0.3);
+}
+
+.maturity-blue {
+    background: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.maturity-green {
+    background: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.maturity-purple {
+    background: rgba(139, 92, 246, 0.2);
+    color: #c084fc;
+    border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.maturity-cyan {
+    background: rgba(0, 255, 255, 0.2);
+    color: #22d3ee;
+    border: 1px solid rgba(0, 255, 255, 0.3);
 }
 
 .applicationActions {
     flex-shrink: 0;
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 0.75rem;
+    padding: 1rem 1.5rem;
+    //border-bottom: 1px solid var(--color-border);
 }
 
 .applicationDetails {
@@ -100,32 +184,96 @@
 }
 
 .debugSection {
-    margin-top: 2rem;
-    
-    summary {
-        cursor: pointer;
-        color: var(--color-text-tertiary);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    max-height: 400px; // Limit the maximum height to prevent overflow
+    flex-shrink: 0;
+    padding: 1rem 1.5rem 1.5rem 1.5rem;
+}
+
+.debugButton {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--color-bg-tertiary);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    color: var(--color-text-secondary);
+    font-size: var(--fs-400, 1em);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 100%;
+    text-align: left;
+
+    &:hover {
+        background: var(--color-bg-elevated);
+        border-color: var(--color-accent);
+        color: var(--color-text-primary);
+    }
+
+    svg {
+        flex-shrink: 0;
+    }
+}
+
+.debugContent {
+    flex: 1;
+    overflow: auto;
+    background: #000000;
+    border: 1px solid var(--color-border, rgba(255, 255, 255, 0.1));
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    padding: 1rem;
+    margin-top: 0;
+    min-height: 200px;
+    max-height: 350px; // Ensure content doesn't overflow the section
+
+    pre {
+        margin: 0;
+        color: #ffffff;
         font-size: var(--fs-350, 0.875rem);
-        margin-bottom: 0.5rem;
-        
-        &:hover {
-            color: var(--color-text-secondary);
-        }
+        font-family: 'Courier New', Courier, monospace;
+        line-height: 1.4;
+        white-space: pre-wrap;
+        word-break: break-word;
     }
 }
 
 // Mobile responsive
+@media screen and (max-width: 1200px) {
+    .pageLayout {
+        flex-direction: column;
+        height: auto;
+    }
+
+    .appCard {
+        width: 100%;
+        max-width: 100%;
+        flex: none;
+        margin: 0.5em 0;
+    }
+}
+
 @media screen and (max-width: 768px) {
     .applicationHeader {
-        flex-direction: column;
-        align-items: stretch;
+        padding: 1rem;
         gap: 1rem;
     }
 
+    .applicationInfo {
+        gap: 0.75rem;
+    }
+
+    .infoItem {
+        padding: 0.625rem;
+    }
+
     .applicationActions {
-        align-self: flex-end;
+        padding: 0.75rem 1rem;
         width: 100%;
-        justify-content: flex-end;
+        justify-content: flex-start;
     }
 
     .detailRow {
@@ -136,6 +284,10 @@
     .detailLabel {
         min-width: unset;
         font-size: var(--fs-350, 0.875rem);
+    }
+
+    .debugSection {
+        padding: 0.75rem 1rem 1rem 1rem;
     }
 }
 
@@ -163,12 +315,24 @@
 }
 
 @media screen and (max-width: 480px) {
-    .applicationContent {
-        padding: 1rem;
-        gap: 1rem;
+    .applicationHeader {
+        padding: 0.875rem;
+    }
+
+    .infoItem {
+        padding: 0.5rem;
+
+        strong {
+            font-size: var(--fs-300, 0.75rem);
+        }
+
+        span {
+            font-size: var(--fs-350, 0.875rem);
+        }
     }
 
     .applicationActions {
+        padding: 0.625rem 0.875rem;
         width: 100%;
 
         // Make delete button full width on small screens
@@ -176,6 +340,14 @@
             width: 100%;
             justify-content: center;
         }
+    }
+
+    .debugSection {
+        padding: 0.625rem 0.875rem 0.875rem 0.875rem;
+    }
+
+    .debugButton {
+        font-size: var(--fs-350, 0.875rem);
     }
 }
 

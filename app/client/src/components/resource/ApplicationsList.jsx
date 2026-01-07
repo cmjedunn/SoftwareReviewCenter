@@ -107,7 +107,28 @@ const SearchBar = ({ searchTerm, onSearchChange, assignedToMeFilter, onAssignedT
 
 export default function ApplicationsList() {
     const backend = import.meta.env.VITE_BACKEND_URL || "";
-    const [applications, setApplications] = useState([]);
+    const CACHE_KEY = 'applications_cache';
+    const CACHE_TIMESTAMP_KEY = 'applications_cache_timestamp';
+    const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache validity
+
+    // Initialize state with cached data if available
+    const [applications, setApplications] = useState(() => {
+        try {
+            const cached = localStorage.getItem(CACHE_KEY);
+            const timestamp = localStorage.getItem(CACHE_TIMESTAMP_KEY);
+
+            if (cached && timestamp) {
+                const age = Date.now() - parseInt(timestamp);
+                if (age < CACHE_DURATION) {
+                    return JSON.parse(cached);
+                }
+            }
+        } catch (error) {
+            console.error('Error loading cached applications:', error);
+        }
+        return [];
+    });
+    const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [assignedToMeFilter, setAssignedToMeFilter] = useState(false);
     const [visibleCards, setVisibleCards] = useState(new Set());
@@ -124,18 +145,28 @@ export default function ApplicationsList() {
     const currentUserEmail = account?.username; // MSAL typically stores email as username
 
     // WebGL context management
-    const MAX_VISIBLE_CARDS = 5; // Strict limit to prevent WebGL context issues
+    const MAX_VISIBLE_CARDS = 8; // Increased from 5 to 8 to reduce card swapping frequency
     const visibleCardsArrayRef = useRef([]); // Track order of visibility
 
     useEffect(() => {
+        setIsLoading(true);
         fetch(`${backend}/api/applications`)
             .then(res => res.json())
             .then(data => {
                 // Handle both direct array and wrapped response
                 const appArray = Array.isArray(data) ? data : data.content || [];
                 setApplications(appArray);
+
+                // Cache the data in localStorage
+                try {
+                    localStorage.setItem(CACHE_KEY, JSON.stringify(appArray));
+                    localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
+                } catch (error) {
+                    console.error('Error caching applications:', error);
+                }
             })
-            .catch(console.error);
+            .catch(console.error)
+            .finally(() => setIsLoading(false));
     }, [backend]);
 
     // Advanced search and filter function
@@ -197,62 +228,74 @@ export default function ApplicationsList() {
     // More aggressive intersection observer with strict limits
     useEffect(() => {
         if (!observerRef.current) {
+            // Debounce state updates to prevent rapid flickering
+            let updateTimeout = null;
+
             observerRef.current = new IntersectionObserver(
                 (entries) => {
-                    setVisibleCards(prev => {
-                        const currentVisibleArray = visibleCardsArrayRef.current;
-                        const newVisible = new Set(prev);
+                    // Clear any pending updates
+                    if (updateTimeout) clearTimeout(updateTimeout);
 
-                        entries.forEach(entry => {
-                            const index = parseInt(entry.target.dataset.index);
+                    // Debounce the state update by 50ms to batch rapid intersection changes
+                    updateTimeout = setTimeout(() => {
+                        setVisibleCards(prev => {
+                            const currentVisibleArray = visibleCardsArrayRef.current;
+                            const newVisible = new Set(prev);
 
-                            if (entry.isIntersecting) {
-                                // Only add if under limit or if replacing an existing one
-                                if (newVisible.size < MAX_VISIBLE_CARDS) {
-                                    newVisible.add(index);
-                                    if (!currentVisibleArray.includes(index)) {
+                            entries.forEach(entry => {
+                                const index = parseInt(entry.target.dataset.index);
+
+                                if (entry.isIntersecting) {
+                                    // Only add if under limit or if replacing an existing one
+                                    if (newVisible.size < MAX_VISIBLE_CARDS) {
+                                        newVisible.add(index);
+                                        if (!currentVisibleArray.includes(index)) {
+                                            currentVisibleArray.push(index);
+                                        }
+                                    } else {
+                                        // Remove oldest visible card to make room
+                                        const oldestIndex = currentVisibleArray.shift();
+                                        if (oldestIndex !== undefined) {
+                                            newVisible.delete(oldestIndex);
+                                        }
+                                        newVisible.add(index);
                                         currentVisibleArray.push(index);
                                     }
                                 } else {
-                                    // Remove oldest visible card to make room
-                                    const oldestIndex = currentVisibleArray.shift();
-                                    if (oldestIndex !== undefined) {
-                                        newVisible.delete(oldestIndex);
+                                    // Only remove if significantly out of view to prevent rapid toggling
+                                    if (entry.intersectionRatio < 0.05) {
+                                        newVisible.delete(index);
+                                        const arrayIndex = currentVisibleArray.indexOf(index);
+                                        if (arrayIndex > -1) {
+                                            currentVisibleArray.splice(arrayIndex, 1);
+                                        }
                                     }
-                                    newVisible.add(index);
-                                    currentVisibleArray.push(index);
-                                }
-                            } else {
-                                newVisible.delete(index);
-                                const arrayIndex = currentVisibleArray.indexOf(index);
-                                if (arrayIndex > -1) {
-                                    currentVisibleArray.splice(arrayIndex, 1);
-                                }
-                            }
-                        });
-
-                        // Safety check: never exceed MAX_VISIBLE_CARDS
-                        if (newVisible.size > MAX_VISIBLE_CARDS) {
-                            console.warn(`WebGL safety: Visible cards (${newVisible.size}) exceeded limit (${MAX_VISIBLE_CARDS}). Removing excess.`);
-                            const visibleArray = Array.from(newVisible);
-                            const excess = visibleArray.slice(0, visibleArray.length - MAX_VISIBLE_CARDS);
-                            excess.forEach(index => {
-                                newVisible.delete(index);
-                                const arrayIndex = currentVisibleArray.indexOf(index);
-                                if (arrayIndex > -1) {
-                                    currentVisibleArray.splice(arrayIndex, 1);
                                 }
                             });
-                        }
 
-                        visibleCardsArrayRef.current = currentVisibleArray;
-                        return newVisible;
-                    });
+                            // Safety check: never exceed MAX_VISIBLE_CARDS
+                            if (newVisible.size > MAX_VISIBLE_CARDS) {
+                                console.warn(`WebGL safety: Visible cards (${newVisible.size}) exceeded limit (${MAX_VISIBLE_CARDS}). Removing excess.`);
+                                const visibleArray = Array.from(newVisible);
+                                const excess = visibleArray.slice(0, visibleArray.length - MAX_VISIBLE_CARDS);
+                                excess.forEach(index => {
+                                    newVisible.delete(index);
+                                    const arrayIndex = currentVisibleArray.indexOf(index);
+                                    if (arrayIndex > -1) {
+                                        currentVisibleArray.splice(arrayIndex, 1);
+                                    }
+                                });
+                            }
+
+                            visibleCardsArrayRef.current = currentVisibleArray;
+                            return newVisible;
+                        });
+                    }, 50); // 50ms debounce for smoother transitions
                 },
                 {
                     root: null,
-                    rootMargin: '20px', // Reduced from 50px for tighter control
-                    threshold: 0.3 // Increased from 0.1 - card must be more visible to activate
+                    rootMargin: '100px', // Increased from 20px to reduce frequent switching
+                    threshold: [0, 0.1, 0.25, 0.5, 0.75, 1.0] // Multiple thresholds for smoother transitions
                 }
             );
         }
@@ -338,7 +381,29 @@ export default function ApplicationsList() {
         return { applicationName, maturityScore: displayScore, theme };
     };
 
-    if (!applications.length) {
+    // Show loading state only if we have no cached data and are currently loading
+    if (isLoading && !applications.length) {
+        return (
+            <Card className={styles.card}>
+                <div style={{
+                    textAlign: 'center',
+                    padding: '2rem',
+                    color: '#9ca3af'
+                }}>
+                    <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⏳</div>
+                    <p style={{ margin: '0 0 1rem 0', fontSize: '1.1rem' }}>
+                        Loading applications...
+                    </p>
+                    <p style={{ margin: 0, fontSize: '0.9rem' }}>
+                        Waiting for Logicate to respond
+                    </p>
+                </div>
+            </Card>
+        );
+    }
+
+    // Show empty state only after loading completes and there's truly no data
+    if (!isLoading && !applications.length) {
         return (
             <Card className={styles.card}>
                 <div style={{
@@ -360,6 +425,20 @@ export default function ApplicationsList() {
 
     return (
         <Card className={styles.card}>
+            {/* Show subtle loading indicator when refreshing with cached data */}
+            {isLoading && applications.length > 0 && (
+                <div style={{
+                    padding: '0.5rem',
+                    textAlign: 'center',
+                    fontSize: '0.85rem',
+                    color: '#6b7280',
+                    backgroundColor: '#f3f4f6',
+                    borderRadius: '4px',
+                    marginBottom: '0.5rem'
+                }}>
+                    🔄 Refreshing applications...
+                </div>
+            )}
             <SearchBar
                 searchTerm={searchTerm}
                 onSearchChange={setSearchTerm}

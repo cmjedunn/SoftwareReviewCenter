@@ -21,10 +21,10 @@ const privateKey = privateKeySource.replace(/\r/g, '').replace(/\n/g, '');
 
 export const msalConfig = {
     auth: {
-        clientId: process.env.ENTRA_CLIENT_ID || 'f0e2a1b0-5ff6-4b69-8dc8-4d09e4905133',
-        authority: `https://login.microsoftonline.com/${process.env.ENTRA_TENANT_ID || 'e5e66f9b-9af2-47a3-8179-53be49b04490'}`,
+        clientId: process.env.ENTRA_CLIENT_ID,
+        authority: `https://login.microsoftonline.com/${process.env.ENTRA_TENANT_ID}`,
         clientCertificate: {
-            thumbprintSha256: process.env.CERT_THUMBPRINT || 'CA7A13B70C38BA24D35A51BCEF73D9AA630FFCD2',
+            thumbprintSha256: process.env.CERT_THUMBPRINT,
             privateKey: privateKey,
         },
     },

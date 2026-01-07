@@ -10,6 +10,7 @@
     font-size: var(--fs-400, 1em);
     cursor: pointer;
     transition: all 0.2s ease;
+    width: 100%;
 
     &:hover:not(:disabled) {
         background: rgba(239, 68, 68, 0.1); // Red tint on hover
@@ -30,6 +31,7 @@
 .confirmationGroup {
     display: flex;
     flex-direction: column;
+    width: 100%;
     gap: 0.75rem;
     padding: 1rem;
     background: var(--color-bg-secondary);

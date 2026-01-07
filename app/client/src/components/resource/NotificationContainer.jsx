@@ -95,6 +95,14 @@ export default function NotificationContainer({ jobId, onJobStarted, onJobComple
                 message: message || 'Operation completed successfully'
             });
 
+            // Clear applications cache to force fresh data on reload
+            try {
+                localStorage.removeItem('applications_cache');
+                localStorage.removeItem('applications_cache_timestamp');
+            } catch (error) {
+                console.error('Error clearing cache:', error);
+            }
+
             // Clean up after showing success (8 seconds total)
             setTimeout(() => {
                 setManagedJobId(null);

@@ -8,6 +8,7 @@ import workflowRoutes from './api/workflows/workflows.routes.js'
 import applicationRecordRoutes from './api/applications/applicationRecords.routes.js'
 import environmentRoutes from './api/environments/environmentRecords.routes.js';
 import controlRoutes from './api/controls/controlRecords.routes.js';
+import auditRoutes from './api/audits/auditRecords.routes.js';
 
 export default function initRoutes(app) {
     const __filename = fileURLToPath(import.meta.url);
@@ -23,6 +24,7 @@ export default function initRoutes(app) {
     app.use('/api/applications', applicationRecordRoutes);
     app.use('/api/environments', environmentRoutes);
     app.use('/api/controls', controlRoutes);
+    app.use('/api/audits', auditRoutes);
     // Health
     app.get('/health', (req, res) => {
         res.status(200).json({

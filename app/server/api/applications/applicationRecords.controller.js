@@ -30,10 +30,21 @@ export async function getApplicationRecordsData(id) {
     const applicationWorkflow = await getWorkflowData(applicationWorkflows.find(item => item.name === "Applications")?.id);
 
     // Get application records
-    if (!id)
+    if (!id) {
         return await getRecordsData({ 'workflow-id': applicationWorkflow.workflow.id, size: 5000 });
-    else
-        return await getRecordsData({ id: id, 'workflow-id': applicationWorkflow.workflow.id, size: 1000 });
+    } else {
+        const record = await getRecordsData({ id: id, 'workflow-id': applicationWorkflow.workflow.id, size: 1000 });
+
+        // Fetch linked records for the single application
+        const environmentsWorkflow = applicationWorkflows.find(item => item.name === "Environments");
+        if (environmentsWorkflow) {
+            const linkedRecords = await getLinkedRecordsData(id, [environmentsWorkflow.id], APPLICATIONS_ID);
+            // Merge linked records into the record
+            record.linkedRecords = linkedRecords.linkedRecords;
+        }
+
+        return record;
+    }
 }
 
 async function _deleteApplicationRecordInternal(id) {
@@ -668,8 +679,10 @@ export const deleteApplicationRecordData = controllerLimiter.wrap(_deleteApplica
 export async function getApplicationRecord(req, res) {
     logRequest(req);
 
+    const id = req.params.id || null;
+
     try {
-        const result = await getApplicationRecordsData();
+        const result = await getApplicationRecordsData(id);
         const successResponse = createSuccessResponse(req, result);
         return res.status(200).json(successResponse);
     } catch (error) {

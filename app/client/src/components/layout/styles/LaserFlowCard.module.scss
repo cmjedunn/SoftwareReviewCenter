@@ -10,6 +10,8 @@
   border: 0;
   padding: 0;
   margin: 0;
+  will-change: contents; // Hint to browser for GPU acceleration
+  transform: translateZ(0); // Force GPU layer for smoother rendering
 }
 
 // LaserFlow overlay (used for CSS positioning)
@@ -22,6 +24,8 @@
   pointer-events: none;
   z-index: 1;
   height: 200%;
+  will-change: transform; // Optimize transform animations
+  backface-visibility: hidden; // Prevent flickering during transforms
 }
 
 // Enhanced theme color definitions - now matching the navbar blue

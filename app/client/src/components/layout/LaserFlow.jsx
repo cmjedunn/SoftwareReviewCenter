@@ -262,7 +262,7 @@ const LaserFlow = ({
   const mountRef = useRef(null);
   const rendererRef = useRef(null);
   const uniformsRef = useRef(null);
-  const hasFadedRef = useRef(false);
+  const hasFadedRef = useRef(false); // Restored fade-in animation
   const rectRef = useRef(null);
   const baseDprRef = useRef(1);
   const currentDprRef = useRef(1);
@@ -341,7 +341,7 @@ const LaserFlow = ({
       uFalloffStart: { value: falloffStart },
       uFogFallSpeed: { value: fogFallSpeed },
       uColor: { value: new THREE.Vector3(1, 1, 1) },
-      uFade: { value: hasFadedRef.current ? 1 : 0 }
+      uFade: { value: hasFadedRef.current ? 1 : 0 } // Restored fade-in
     };
     uniformsRef.current = uniforms;
 
@@ -361,7 +361,7 @@ const LaserFlow = ({
 
     const clock = new THREE.Clock();
     let prevTime = 0;
-    let fade = hasFadedRef.current ? 1 : 0;
+    let fade = hasFadedRef.current ? 1 : 0; // Restored fade-in animation
 
     const mouseTarget = new THREE.Vector2(0, 0);
     const mouseSmooth = new THREE.Vector2(0, 0);
@@ -377,9 +377,15 @@ const LaserFlow = ({
     };
 
     let resizeRaf = 0;
+    let resizeTimeout = null;
     const scheduleResize = () => {
       if (resizeRaf) cancelAnimationFrame(resizeRaf);
-      resizeRaf = requestAnimationFrame(setSizeNow);
+      if (resizeTimeout) clearTimeout(resizeTimeout);
+
+      // Debounce resize events to prevent excessive redraws
+      resizeTimeout = setTimeout(() => {
+        resizeRaf = requestAnimationFrame(setSizeNow);
+      }, 100); // 100ms debounce
     };
 
     setSizeNow();
@@ -418,7 +424,7 @@ const LaserFlow = ({
 
     const adjustDprIfNeeded = now => {
       const elapsed = now - lastFpsCheckRef.current;
-      if (elapsed < 750) return;
+      if (elapsed < 1500) return; // Increased from 750ms to 1500ms for more stability
 
       const samples = fpsSamplesRef.current;
       if (samples.length === 0) {
@@ -436,7 +442,8 @@ const LaserFlow = ({
         next = clamp(currentDprRef.current * 1.05, dprFloor, base);
       }
 
-      if (Math.abs(next - currentDprRef.current) > 0.01) {
+      // Increase threshold to prevent micro-adjustments that cause flicker
+      if (Math.abs(next - currentDprRef.current) > 0.05) { // Increased from 0.01 to 0.05
         currentDprRef.current = next;
         setSizeNow();
       }
@@ -464,8 +471,9 @@ const LaserFlow = ({
       uniforms.uFlowTime.value += cdt;
       uniforms.uFogTime.value += cdt;
 
+      // Smooth fade-in animation on mount
       if (!hasFadedRef.current) {
-        const fadeDur = 1.0;
+        const fadeDur = 0.6; // Shortened from 1.0s to 0.6s for snappier feel
         fade = Math.min(1, fade + cdt / fadeDur);
         uniforms.uFade.value = fade;
         if (fade >= 1) hasFadedRef.current = true;
