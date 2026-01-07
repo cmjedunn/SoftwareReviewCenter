@@ -20,6 +20,12 @@ export default function Application() {
     // Get the application from navigation state
     const applicationRecord = location.state?.application;
     const backend = import.meta.env.VITE_BACKEND_URL || "";
+    const logicgateEnv = import.meta.env.VITE_LOGICGATE_ENV || "atheneum";
+
+    // Generate LogicGate URL for the application record
+    const logicgateUrl = applicationRecord?.id
+        ? `https://${logicgateEnv}.logicgate.com/records/${applicationRecord.id}`
+        : null;
 
     // Handle delete functionality
     const handleDelete = async () => {
@@ -76,7 +82,32 @@ export default function Application() {
     return (
         <PageWrapper>
             <AuthContent>
-                <Card className={styles.appCard} title={applicationRecord.name}>
+                <Card className={styles.appCard} title={
+                    <div className={styles.applicationTitle}>
+                        <a
+                            href={logicgateUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={styles.applicationTitleLink}
+                        >
+                            {applicationRecord.name}
+                            <svg
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            >
+                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                <polyline points="15 3 21 3 21 9"></polyline>
+                                <line x1="10" y1="14" x2="21" y2="3"></line>
+                            </svg>
+                        </a>
+                    </div>
+                }>
                     <div className={styles.applicationContent}>
                         <div className={styles.applicationHeader}>
                             <div className={styles.applicationInfo}>

@@ -1,6 +1,11 @@
 ## Bild Commands ##
 docker-compose build --no-cache jed_srcenter && docker tag cmjedunn/jed_srcenter:latest cmjedunn/jed_software_review_center:alpha1.0.0 && docker push cmjedunn/jed_software_review_center:alpha1.0.0
 
+az containerapp update \
+  --name jed-srcenter-a1-0-0 \
+  --resource-group jed-production-sub \
+  --set-env-vars "ENTRA_TENANT_ID=secretref:entra-tenant-id" "ENTRA_CLIENT_ID=secretref:entra-client-id"
+
 # LogicGate Record Management API
 
 This API provides endpoints for managing LogicGate records with comprehensive backup and validation capabilities.

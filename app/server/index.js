@@ -8,13 +8,15 @@ import { initTokenManager } from './auth/tokenManager.js';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
 import { JobManager } from './services/jobManager.js';
-import { authenticateToken, authenticateWebSocketToken ,healthCheck } from './middleware/authMiddleware.js';
+import { authenticateToken, authenticateWebSocketToken, healthCheck } from './middleware/authMiddleware.js';
 
 dotenv.config();
 
 initTokenManager();
 
 const app = express();
+
+app.set('trust proxy', 1);
 
 // Rate limiting middleware (apply before auth)
 const limiter = rateLimit({
@@ -40,7 +42,10 @@ const authLimiter = rateLimit({
 });
 
 // Basic middleware
-app.use(cors());
+app.use(cors({
+    origin: ['https://jed-srcenter-a1-0-0.ashyplant-cf496021.centralus.azurecontainerapps.io', 'http://localhost:5173'],
+    credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -87,12 +92,12 @@ const authenticateWebSocket = async (ws, req) => {
     try {
         const url = new URL(req.url, 'http://localhost');
         const token = url.searchParams.get('token');
-        
+
         // Use the same Microsoft validation as HTTP endpoints
         const authResult = await authenticateWebSocketToken(token);
-        
+
         return { token, userId: authResult.userId };
-        
+
     } catch (error) {
         console.error('❌ WebSocket authentication failed:', error.message);
         ws.close(1008, 'Authentication failed');
