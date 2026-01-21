@@ -2,7 +2,9 @@ import { Router } from 'express';
 import {
     getAuditRecords,
     getAuditRecord,
-    getApplicationAuditsForApplication
+    getApplicationAuditsForApplication,
+    createAuditRecord,
+    createApplicationAuditRecord
 } from './auditRecords.controler.js';
 
 const router = Router();
@@ -10,13 +12,18 @@ const router = Router();
 // IMPORTANT: More specific routes MUST come before generic routes
 // Put specific routes like /application/:applicationId BEFORE parameterized routes like /:id
 
-// Application audits route (must come first!)
+// Application audit creation route (must come first!)
+router.route('/application-audit')
+    .post(createApplicationAuditRecord);       // POST /api/audits/application-audit
+
+// Application audits route
 router.route('/application/:applicationId')
     .get(getApplicationAuditsForApplication);  // GET /api/audits/application/:applicationId
 
 // Main audit routes
 router.route('/')
-    .get(getAuditRecords);                     // GET /api/audits
+    .get(getAuditRecords)                      // GET /api/audits
+    .post(createAuditRecord);                  // POST /api/audits
 
 // Parameterized routes (must come last!)
 router.route('/:id')

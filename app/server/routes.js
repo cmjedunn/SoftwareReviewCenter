@@ -9,6 +9,7 @@ import applicationRecordRoutes from './api/applications/applicationRecords.route
 import environmentRoutes from './api/environments/environmentRecords.routes.js';
 import controlRoutes from './api/controls/controlRecords.routes.js';
 import auditRoutes from './api/audits/auditRecords.routes.js';
+import controlEvaluationRoutes from './api/controlEvaluations/controlEvaluationRecords.routes.js';
 
 export default function initRoutes(app) {
     const __filename = fileURLToPath(import.meta.url);
@@ -25,6 +26,7 @@ export default function initRoutes(app) {
     app.use('/api/environments', environmentRoutes);
     app.use('/api/controls', controlRoutes);
     app.use('/api/audits', auditRoutes);
+    app.use('/api/control-evaluations', controlEvaluationRoutes);
     // Health
     app.get('/health', (req, res) => {
         res.status(200).json({
