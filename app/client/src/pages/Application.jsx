@@ -17,6 +17,7 @@ export default function Application() {
     const { id } = useParams();
     const navigate = useNavigate();
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isCreatingAudit, setIsCreatingAudit] = useState(false);
     const [debugExpanded, setDebugExpanded] = useState(false);
     const [environmentName, setEnvironmentName] = useState('Loading...');
 
@@ -191,6 +192,123 @@ export default function Application() {
         }
     };
 
+    // Handle create application audit functionality
+    const handleCreateAppAudit = async () => {
+        if (!applicationRecord?.id) return;
+
+        // Prompt user for Third Party name
+        const thirdPartyName = prompt('Enter the Third Party name for this audit:');
+
+        if (!thirdPartyName || thirdPartyName.trim() === '') {
+            alert('Third Party name is required to create an application audit.');
+            return;
+        }
+
+        setIsCreatingAudit(true);
+
+        try {
+            console.log('📝 Creating application audit for application:', applicationRecord.id);
+            console.log('🔍 Searching for audit with Third Party name:', thirdPartyName);
+
+            // Search for existing audit with the given Third Party name
+            let selectedAudit = null;
+            const auditsResponse = await fetch(`${backend}/api/audits`);
+
+            if (auditsResponse.ok) {
+                const auditsData = await auditsResponse.json();
+                const audits = auditsData.data?.records || [];
+
+                console.log('📋 Total audits found:', audits.length);
+                if (audits.length > 0) {
+                    console.log('📋 Sample audit structure:', audits[0]);
+                }
+
+                // Search for audit by name (case-insensitive)
+                selectedAudit = audits.find(audit =>
+                    audit.name?.toLowerCase().trim() === thirdPartyName.toLowerCase().trim()
+                );
+
+                if (selectedAudit) {
+                    console.log('✅ Found existing audit:', selectedAudit);
+                }
+            }
+
+            // If no audit found, create a new one
+            if (!selectedAudit) {
+                console.log('📝 No existing audit found, creating new audit...');
+
+                const currentYear = new Date().getFullYear().toString();
+                const createAuditResponse = await fetch(`${backend}/api/audits`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: thirdPartyName,
+                        year: currentYear,
+                        scope: ''
+                    })
+                });
+
+                if (!createAuditResponse.ok) {
+                    const errorData = await createAuditResponse.json();
+                    throw new Error(errorData.error || `Failed to create audit: ${createAuditResponse.status}`);
+                }
+
+                const newAuditResult = await createAuditResponse.json();
+                console.log('📦 Full audit creation response:', newAuditResult);
+
+                // Extract audit data from response (properties are directly on the object)
+                selectedAudit = {
+                    id: newAuditResult.id,
+                    name: newAuditResult.name,
+                    year: newAuditResult.year,
+                    scope: newAuditResult.scope
+                };
+                console.log('✅ Created new audit data:', selectedAudit);
+            }
+
+            // Verify we have a valid audit with an ID
+            if (!selectedAudit || !selectedAudit.id) {
+                console.error('❌ Invalid audit object:', selectedAudit);
+                throw new Error('Failed to get valid audit ID');
+            }
+
+            console.log('📝 Creating application audit with auditId:', selectedAudit.id, 'applicationId:', applicationRecord.id);
+
+            // Create the application audit linked to the audit
+            const response = await fetch(`${backend}/api/audits/application-audit`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    auditId: selectedAudit.id,
+                    applicationId: applicationRecord.id
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `Failed to create application audit: ${response.status}`);
+            }
+
+            const result = await response.json();
+            console.log('✅ Application audit created successfully:', result);
+
+            alert(`Application audit created successfully and linked to Third Party: ${thirdPartyName}`);
+
+            // Refresh the page to show the new audit in the list
+            window.location.reload();
+
+        } catch (error) {
+            console.error('❌ Error creating application audit:', error);
+            alert(`Failed to create application audit: ${error.message}`);
+        } finally {
+            setIsCreatingAudit(false);
+        }
+    };
+
     // Handle case where no state was passed (direct URL access)
     if (!applicationRecord) {
         return (
@@ -270,12 +388,33 @@ export default function Application() {
                                 </div>
                             </div>
 
-                            {/* Action Buttons - Edit and Delete */}
+                            {/* Action Buttons - Edit, Delete, and Create App Audit */}
                             <div className={styles.applicationActions}>
                                 <EditButton
                                     onEdit={handleEdit}
                                     buttonText="Edit in LogicGate"
                                 />
+                                <button
+                                    type="button"
+                                    onClick={handleCreateAppAudit}
+                                    disabled={isCreatingAudit}
+                                    className={styles.createAuditButton}
+                                    title="Create a new application audit for this application"
+                                >
+                                    <svg
+                                        width="16"
+                                        height="16"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                    >
+                                        <path d="M12 5v14M5 12h14"></path>
+                                    </svg>
+                                    {isCreatingAudit ? 'Creating...' : 'Create App Audit'}
+                                </button>
                                 <DeleteButton
                                     onDelete={handleDelete}
                                     applicationName={applicationRecord.name}

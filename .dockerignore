@@ -9,3 +9,4 @@ app/client/.env.production
 app/server/logs/*
 app/server/public
 app/client/dist
+app/server/token-cache/*
