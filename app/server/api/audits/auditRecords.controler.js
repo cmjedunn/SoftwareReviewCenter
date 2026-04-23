@@ -4,6 +4,8 @@ import { createErrorResponse } from '../utils/createErrorResponse.js';
 import { createSuccessResponse } from '../utils/createSuccessResponse.js';
 import { getWorkflowData, getWorkflowsData } from '../workflows/workflows.controller.js';
 import { getLinkedRecordsData, getRecordsData } from '../records/records.controller.js';
+import { JobManager } from '../../services/jobManager.js';
+import { bulkCreateControlEvaluationsData } from '../controlEvaluations/controlEvaluationRecords.controller.js';
 
 const ENV = process.env.LOGICGATE_ENV;
 const BASE_URL = `https://${ENV}.logicgate.com`;
@@ -12,36 +14,6 @@ const APPLICATIONS_ID = process.env.APPLICATIONS_ID;
 /**
  * HELPER FUNCTIONS
  */
-
-/**
- * Fetch all layouts from LogicGate API
- * @returns {Promise<Array>} Array of layout objects
- */
-async function getLayouts() {
-    let token = await getToken();
-    if (!token) throw new Error('Failed to get authentication token');
-
-    const requestUrl = `${BASE_URL}/api/v1/layouts`;
-    console.log(`🔍 Fetching layouts from: ${requestUrl}`);
-
-    const response = await fetch(requestUrl, {
-        method: 'GET',
-        headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: 'application/json',
-        },
-    });
-
-    if (!response.ok) {
-        const errorBody = await response.text();
-        throw new Error(`Failed to fetch layouts: ${response.status} ${errorBody}`);
-    }
-
-    const layouts = await response.json();
-    console.log(`✅ Successfully retrieved ${layouts.length} layouts`);
-
-    return layouts;
-}
 
 /**
  * Get audit records with optional linked application audits
@@ -375,480 +347,123 @@ export async function createAuditRecordData(name, year, scope, userEmail) {
 
 /**
  * Create a new application audit record linked to an audit and application
- * @param {string} auditId - Parent audit ID (optional)
+ * @param {string} auditId - Parent audit ID
  * @param {string} applicationId - Application ID to link to
- * @param {string} userEmail - Email of the user creating the record
  * @returns {Promise<Object>} Created application audit record
  */
-export async function createApplicationAuditRecordData(auditId, applicationId, userEmail) {
+export async function createApplicationAuditRecordData(auditId, applicationId, progressCallback = () => {}) {
+    if (!auditId) throw new Error('auditId is required');
+
     let token = await getToken();
     if (!token) throw new Error('Failed to get authentication token');
 
-    if (auditId) {
-        console.log(`🔍 Creating application audit for audit: ${auditId} and application: ${applicationId}`);
-    } else {
-        console.log(`🔍 Creating application audit for application: ${applicationId} (no parent audit)`);
-    }
+    // Hardcoded bulk create source ID — observed from LogicGate UI network traffic.
+    // Maps: Applications (source) → Application Audits (child) under an Audit (parent).
+    const BULK_CREATE_SOURCE_ID = 'jnP9gzb6';
+    const RETRY_DELAY_MS = 5 * 60 * 1000; // 5 minutes
+    const REQUEST_TIMEOUT_MS = 30 * 1000;  // 30 seconds
 
-    console.log(`🔑 Using APPLICATIONS_ID: ${APPLICATIONS_ID}`);
+    // Get Application Audits workflow ID — needed for polling after bulk create
+    const applicationWorkflows = await getWorkflowsData({ 'application-id': APPLICATIONS_ID });
+    const appAuditsWorkflowId = applicationWorkflows.find(w => w.name === "Application Audits")?.id;
+    if (!appAuditsWorkflowId) throw new Error('Application Audits workflow not found');
 
-    // Get application workflows
-    let applicationWorkflows;
-    try {
-        applicationWorkflows = await getWorkflowsData({ 'application-id': APPLICATIONS_ID });
-    } catch (workflowError) {
-        console.error('❌ Error fetching workflows:', workflowError);
-        throw new Error(`Failed to fetch workflows: ${workflowError.message}`);
-    }
+    const url = `${BASE_URL}/api/v1/bulk-create-and-link`;
+    const body = {
+        bulkCreateSourceId: BULK_CREATE_SOURCE_ID,
+        parentRecordId: auditId,
+        sourceRecordIds: [applicationId]
+    };
 
-    if (!applicationWorkflows || !Array.isArray(applicationWorkflows)) {
-        console.error('❌ applicationWorkflows is not an array:', applicationWorkflows);
-        throw new Error('Failed to fetch application workflows');
-    }
+    console.log(`🚀 POST ${url}`);
+    console.log(`📤 Request body:`, JSON.stringify(body, null, 2));
+    progressCallback(5, 'Sending Application Audit creation request...');
 
-    console.log(`📋 Found ${applicationWorkflows.length} workflows`);
+    let retryCount = 5;
+    while (true) {
+        if (retryCount > 0) {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
-    // Find the Application Audits workflow
-    const applicationAuditsWorkflowSummary = applicationWorkflows.find(item => item.name === "Application Audits");
-
-    if (!applicationAuditsWorkflowSummary) {
-        console.error('❌ Application Audits workflow not found in:', applicationWorkflows.map(w => w.name));
-        throw new Error('Application Audits workflow not found');
-    }
-
-    const applicationAuditsWorkflow = await getWorkflowData(applicationAuditsWorkflowSummary.id);
-
-    if (!applicationAuditsWorkflow) {
-        throw new Error('Application Audits workflow not found');
-    }
-
-    console.log(`🔧 Application Audits workflow structure:`, JSON.stringify({
-        hasWorkflow: !!applicationAuditsWorkflow.workflow,
-        hasSteps: !!applicationAuditsWorkflow.steps,
-        stepsIsArray: Array.isArray(applicationAuditsWorkflow.steps),
-        stepsLength: applicationAuditsWorkflow.steps?.length,
-        hasLayouts: !!applicationAuditsWorkflow.layouts,
-        layoutsIsArray: Array.isArray(applicationAuditsWorkflow.layouts),
-        layoutsLength: applicationAuditsWorkflow.layouts?.length,
-        workflowKeys: Object.keys(applicationAuditsWorkflow)
-    }));
-
-    if (!applicationAuditsWorkflow.steps || !Array.isArray(applicationAuditsWorkflow.steps)) {
-        throw new Error('Application Audits workflow steps not found or invalid');
-    }
-
-    // Find the CHAIN step (Application Audits workflow doesn't have ORIGIN, it's a child workflow)
-    const chainStep = applicationAuditsWorkflow.steps.find(step => step.type === "CHAIN");
-    if (!chainStep) {
-        console.error('❌ Available step types:', applicationAuditsWorkflow.steps.map(s => s.type));
-        throw new Error('Chain step not found in Application Audits workflow');
-    }
-
-    console.log(`🔧 Application Audits chain step: ${chainStep.name} (${chainStep.id})`);
-
-    console.log(`🔧 Application Audits chain step structure:`, JSON.stringify({
-        hasId: !!chainStep.id,
-        hasFields: !!chainStep.fields,
-        fieldsIsArray: Array.isArray(chainStep.fields),
-        fieldsLength: chainStep.fields?.length,
-        stepKeys: Object.keys(chainStep)
-    }));
-
-    // Fetch all layouts using the v1 layouts endpoint
-    const allLayouts = await getLayouts();
-
-    // Get the "Audits" workflow
-    const auditsWorkflowSummary = applicationWorkflows.find(w => w.name === "Audits");
-    console.log('🔍 Audits workflow ID:', auditsWorkflowSummary?.id);
-
-    // Get the "Applications" workflow
-    const applicationsWorkflowSummary = applicationWorkflows.find(w => w.name === "Applications");
-    console.log('🔍 Applications workflow ID:', applicationsWorkflowSummary?.id);
-
-    if (!applicationsWorkflowSummary) {
-        throw new Error('Applications workflow not found');
-    }
-
-    // Fetch the Applications workflow to see its step configuration
-    const applicationsWorkflow = await getWorkflowData(applicationsWorkflowSummary.id);
-    console.log('🔍 Applications workflow steps:', applicationsWorkflow.steps?.map(s => ({
-        id: s.id,
-        name: s.name,
-        type: s.type
-    })));
-
-    // Get the Application Audits workflow ID
-    const applicationAuditsLayoutId = applicationAuditsWorkflow.workflow?.id;
-    console.log('🔍 Application Audits workflow ID:', applicationAuditsLayoutId);
-
-    // Search ALL layouts for ones that might connect to Application Audits
-    // Layouts may have properties that indicate child workflow connections
-    console.log('🔍 Searching all layouts for Application Audits connections...');
-    console.log('🔍 Sample layout structure:', JSON.stringify(allLayouts[0], null, 2));
-
-    // Look for layouts that might reference the Application Audits workflow
-    const appAuditLayouts = allLayouts.filter(layout => {
-        const layoutStr = JSON.stringify(layout).toLowerCase();
-        return layoutStr.includes('application audit') || layoutStr.includes(applicationAuditsLayoutId);
-    });
-
-    console.log('🔍 Layouts mentioning Application Audits:', appAuditLayouts.map(l => ({
-        id: l.id,
-        title: l.title,
-        workflowId: l.workflow?.id,
-        workflowName: l.workflow?.name,
-        layoutType: l.layoutType,
-        keys: Object.keys(l)
-    })));
-
-    // Filter layouts to find those related to our workflows
-    const relevantLayouts = allLayouts.filter(layout =>
-        layout.workflow?.id === applicationsWorkflowSummary.id ||
-        layout.workflow?.id === auditsWorkflowSummary?.id
-    );
-
-    console.log('🔍 Relevant layouts:', relevantLayouts.map(l => ({
-        id: l.id,
-        title: l.title,
-        workflowId: l.workflow?.id,
-        workflowName: l.workflow?.name,
-        layoutType: l.layoutType
-    })));
-
-    // Find the layout that belongs to Applications workflow and points to Application Audits
-    // First try by title
-    let applicationLayout = relevantLayouts.find(layout =>
-        layout.workflow?.id === applicationsWorkflowSummary.id &&
-        (layout.title?.toLowerCase().includes('application audit') ||
-         layout.title?.toLowerCase().includes('app audit'))
-    );
-
-    // If not found by title, try the first layout that mentions Application Audits
-    if (!applicationLayout && appAuditLayouts.length > 0) {
-        applicationLayout = appAuditLayouts.find(l => l.workflow?.id === applicationsWorkflowSummary.id);
-    }
-
-    if (!applicationLayout) {
-        console.warn('⚠️  Specific Application Audits layout not found, trying default approach');
-        console.warn('⚠️  Available layouts on Applications workflow:',
-            relevantLayouts.filter(l => l.workflow?.id === applicationsWorkflowSummary.id)
-                .map(l => ({ id: l.id, title: l.title, layoutType: l.layoutType, defaultLayout: l.defaultLayout }))
-        );
-
-        // Try using the default layout for Applications workflow
-        applicationLayout = relevantLayouts.find(l =>
-            l.workflow?.id === applicationsWorkflowSummary.id && l.defaultLayout === true
-        );
-
-        if (!applicationLayout) {
-            // If no default, just use the first Display layout
-            applicationLayout = relevantLayouts.find(l =>
-                l.workflow?.id === applicationsWorkflowSummary.id && l.layoutType === 'Display'
-            );
-        }
-
-        if (!applicationLayout) {
-            throw new Error('No suitable layout found on Applications workflow');
-        }
-
-        console.log(`⚠️  Using fallback layout: ${applicationLayout.title} (${applicationLayout.id})`);
-    } else {
-        console.log(`✅ Found layout: ${applicationLayout.title} (${applicationLayout.id})`);
-    }
-
-    // Fetch the Applications workflow steps with fields to find linked workflow sections
-    console.log(`🔍 Fetching step fields for Applications workflow to find linked workflow section...`);
-
-    let correctLayout = null;
-
-    for (const step of applicationsWorkflow.steps) {
-        const fieldsResponse = await fetch(`${BASE_URL}/api/v2/fields?step-id=${step.id}`, {
-            method: 'GET',
-            headers: {
-                Authorization: `Bearer ${token}`,
-                Accept: 'application/json'
-            }
-        });
-
-        if (fieldsResponse.ok) {
-            const fieldsData = await fieldsResponse.json();
-            const fields = fieldsData.content || [];
-
-            console.log(`🔍 Step "${step.name}" has ${fields.length} total fields`);
-            console.log(`🔍 Field types in step:`, [...new Set(fields.map(f => f.type))].join(', '));
-
-            // Look for LINKED_WORKFLOW type fields
-            const linkedWorkflowFields = fields.filter(f => f.type === 'LINKED_WORKFLOW');
-
-            if (linkedWorkflowFields.length > 0) {
-                console.log(`🔍 Step "${step.name}" has ${linkedWorkflowFields.length} linked workflow field(s):`);
-
-                for (const field of linkedWorkflowFields) {
-                    console.log(`  - "${field.name}": Layout ${field.layout?.id || 'N/A'}, Target: ${field.targetWorkflow?.name || 'N/A'} (ID: ${field.targetWorkflow?.id || 'N/A'})`);
-
-                    if (field.targetWorkflow?.id === applicationAuditsLayoutId && field.layout) {
-                        correctLayout = field.layout;
-                        console.log(`✅ Found Application Audits layout from field "${field.name}": ${correctLayout.id} (${correctLayout.title})`);
-                        break;
-                    }
-                }
-            } else {
-                console.log(`⚠️  No LINKED_WORKFLOW fields found in step "${step.name}"`);
-            }
-        } else {
-            console.error(`❌ Failed to fetch fields for step ${step.id}: ${fieldsResponse.status}`);
-        }
-
-        if (correctLayout) break;
-    }
-
-    // Application Audits is a child workflow without an ORIGIN step
-    // We need to check if the Audits workflow has a workflow link section for creating Application Audits
-    console.log('🔍 Checking if Audits workflow has workflow link for Application Audits...');
-
-    if (!auditsWorkflowSummary) {
-        throw new Error('Audits workflow not found');
-    }
-
-    const auditsWorkflow = await getWorkflowData(auditsWorkflowSummary.id);
-
-    // Find the CHAIN step in Audits workflow (the "Audit In-Progress" step)
-    const auditsChainStep = auditsWorkflow.steps.find(step => step.type === "CHAIN");
-
-    if (!auditsChainStep) {
-        throw new Error('CHAIN step not found in Audits workflow');
-    }
-
-    console.log(`🔍 Checking form sections on Audits step: ${auditsChainStep.name} (${auditsChainStep.id})`);
-
-    // Try to get form sections from the Audits CHAIN step to find workflow link for Application Audits
-    let workflowLink = null;
-    let bulkCreateSource = null;
-
-    try {
-        const formRes = await fetch(`${BASE_URL}/api/v1/form/sections?step=${auditsChainStep.id}`, {
-            method: 'GET',
-            headers: {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (formRes.ok) {
-            const formSections = await formRes.json();
-            console.log(`📋 Found ${formSections.length} form sections on Audits step`);
-            console.log(`📋 Form sections:`, formSections.map(s => ({ name: s.name, id: s.id, type: s.type })));
-
-            // Look for a section related to Application Audits
-            workflowLink = formSections.find(item =>
-                item.name?.toLowerCase().includes('application audit') ||
-                item.type === 'WORKFLOW_LINK'
-            );
-
-            if (workflowLink) {
-                console.log(`✅ Found workflow link: ${workflowLink.name} (${workflowLink.id})`);
-
-                // Get bulk create sources for this workflow link
-                const sourcesRes = await fetch(`${BASE_URL}/api/v1/bulk-create-workflow-source/section/workflow-link/${workflowLink.id}`, {
-                    method: 'GET',
+                const response = await fetch(url, {
+                    method: 'POST',
                     headers: {
                         Authorization: `Bearer ${token}`,
+                        Accept: 'application/json',
                         'Content-Type': 'application/json'
-                    }
+                    },
+                    body: JSON.stringify(body),
+                    signal: controller.signal
                 });
 
-                if (sourcesRes.ok) {
-                    const sources = await sourcesRes.json();
-                    console.log(`📋 Found ${sources.length} bulk create sources`);
-                    if (sources.length > 0) {
-                        console.log(`📋 Source details:`, sources.map(s => ({
-                            id: s.id,
-                            sourceWorkflowId: s.sourceWorkflow?.id,
-                            sourceWorkflowName: s.sourceWorkflow?.name,
-                            targetWorkflowId: s.targetWorkflow?.id,
-                            targetWorkflowName: s.targetWorkflow?.name
-                        })));
-                    }
+                clearTimeout(timeoutId);
 
-                    // Look for a source that targets the Application Audits workflow or uses Applications as source
-                    if (sources.length > 0) {
-                        // Try to find a source where the sourceWorkflow is Applications
-                        bulkCreateSource = sources.find(s => s.sourceWorkflow?.id === applicationsWorkflowSummary?.id);
-
-                        if (!bulkCreateSource) {
-                            // Just use the first source if we can't find a specific match
-                            bulkCreateSource = sources[0];
-                        }
-
-                        console.log(`✅ Using bulk create source: ${bulkCreateSource.id} (source: ${bulkCreateSource.sourceWorkflow?.name}, target: ${bulkCreateSource.targetWorkflow?.name})`);
-                    }
-                }
-            }
-        }
-    } catch (formError) {
-        console.warn(`⚠️  Could not fetch form sections: ${formError.message}`);
-    }
-
-    // If we found a workflow link, try to get its layout configuration
-    if (workflowLink && auditId) {
-        console.log(`🔍 Found workflow link, checking its configuration...`);
-        console.log(`📋 Workflow link details:`, JSON.stringify(workflowLink, null, 2));
-
-        // The workflow link should have a workflowId property that tells us which child workflow it links to
-        const workflowLinkTargetWorkflowId = workflowLink.workflowId || workflowLink.workflow?.id;
-        console.log(`🔍 Workflow link target workflow ID: ${workflowLinkTargetWorkflowId}`);
-
-        // The /child endpoint needs a layout from the PARENT workflow (Audits) that defines
-        // the relationship to the child workflow (Application Audits)
-        // This layout should be on the Audits workflow and point to Application Audits
-
-        // Find layouts on the Audits workflow
-        const auditsLayouts = allLayouts.filter(l => l.workflow?.id === auditsWorkflowSummary.id);
-        console.log(`📋 Found ${auditsLayouts.length} layouts on Audits workflow:`, auditsLayouts.map(l => ({
-            id: l.id,
-            title: l.title,
-            layoutType: l.layoutType
-        })));
-
-        // The workflow link might have a layoutId in its configuration
-        // Let's check all properties of the workflow link to find layout information
-        console.log(`🔍 All workflow link properties:`, Object.keys(workflowLink));
-
-        // Look for any property that might contain layout info
-        let workflowLinkLayout = null;
-
-        // Check various possible layout properties
-        if (workflowLink.layoutId) {
-            workflowLinkLayout = workflowLink.layoutId;
-            console.log(`✅ Found layoutId on workflow link: ${workflowLinkLayout}`);
-        } else if (workflowLink.layout?.id) {
-            workflowLinkLayout = workflowLink.layout.id;
-            console.log(`✅ Found layout.id on workflow link: ${workflowLinkLayout}`);
-        } else if (workflowLink.defaultLayoutId) {
-            workflowLinkLayout = workflowLink.defaultLayoutId;
-            console.log(`✅ Found defaultLayoutId on workflow link: ${workflowLinkLayout}`);
-        }
-
-        if (!workflowLinkLayout) {
-            console.warn('⚠️  Workflow link does not have layout information in expected properties');
-
-            // As a fallback, use the default Display layout on Audits workflow
-            const auditsDefaultLayout = auditsLayouts.find(l => l.defaultLayout === true && l.layoutType === 'Display');
-
-            if (auditsDefaultLayout) {
-                workflowLinkLayout = auditsDefaultLayout.id;
-                console.log(`✅ Using default Audits Display layout: ${auditsDefaultLayout.title} (${workflowLinkLayout})`);
-            } else {
-                // Just use the first Display layout
-                const auditsDisplayLayout = auditsLayouts.find(l => l.layoutType === 'Display');
-                if (auditsDisplayLayout) {
-                    workflowLinkLayout = auditsDisplayLayout.id;
-                    console.log(`✅ Using first Audits Display layout: ${auditsDisplayLayout.title} (${workflowLinkLayout})`);
+                if (!response.ok) {
+                    console.warn(`⚠️ Bulk create request failed: ${response.status}, retrying in ${REQUEST_TIMEOUT_MS / 1000}s... (${retryCount} left)`);
+                    await new Promise(resolve => setTimeout(resolve, REQUEST_TIMEOUT_MS));
+                    retryCount--;
                 } else {
-                    throw new Error('Could not find a suitable layout on Audits workflow for creating child records');
+                    break;
+                }
+            } catch (error) {
+                if (error.name === 'AbortError' || error.code === 'ETIMEDOUT' || error.message.includes('timeout')) {
+                    console.log(`⏱️ Request timed out, retrying in 5 minutes...`);
+                    await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+                    continue;
+                } else {
+                    throw error;
                 }
             }
+        } else {
+            throw new Error('Failed to bulk create and link Application Audit after 5 retries');
         }
+    }
 
-        // Before creating, let's check what fields exist on the Application Audits CHAIN step
-        console.log(`🔍 Fetching fields for Application Audits CHAIN step to see if there are required fields...`);
+    console.log(`✅ Bulk create request accepted — polling for Application Audit to appear...`);
+    progressCallback(20, 'Request accepted, waiting for Application Audit to appear...');
 
-        const appAuditFieldsResponse = await fetch(`${BASE_URL}/api/v2/fields?step-id=${chainStep.id}`, {
-            method: 'GET',
-            headers: {
-                Authorization: `Bearer ${token}`,
-                Accept: 'application/json'
-            }
-        });
+    // Poll until the Application Audit is linked to the audit record (expect 1 — one per sourceRecordId)
+    let applicationAuditId = null;
+    let remaining = 1;
+    while (remaining > 0) {
+        try {
+            const auditRecord = await getLinkedRecordsData(auditId, [appAuditsWorkflowId]);
+            const linkedAudits = auditRecord.linkedRecords.workflow[appAuditsWorkflowId];
+            remaining = 1 - linkedAudits.length;
 
-        let requiredFields = [];
-        let allFields = [];
-        if (appAuditFieldsResponse.ok) {
-            const fieldsData = await appAuditFieldsResponse.json();
-            allFields = fieldsData.content || [];
-            console.log(`📋 Application Audits step has ${allFields.length} fields`);
-            console.log(`📋 Field details:`, allFields.map(f => ({
-                name: f.name,
-                id: f.id,
-                type: f.type,
-                required: f.required
-            })));
-
-            // Check for required fields
-            requiredFields = allFields.filter(f => f.required);
-            if (requiredFields.length > 0) {
-                console.log(`⚠️  Found ${requiredFields.length} required fields:`, requiredFields.map(f => ({
-                    name: f.name,
-                    id: f.id,
-                    type: f.type,
-                    required: f.required
-                })));
+            if (remaining > 0) {
+                console.log(`📊 Application Audit not yet created, checking again in 12 seconds...`);
+                progressCallback(30, 'Waiting for Application Audit...');
+                await new Promise(resolve => setTimeout(resolve, 12000));
             } else {
-                console.log(`✅ No required fields found on Application Audits step`);
+                applicationAuditId = linkedAudits[0].record.id;
+                console.log(`✅ Application Audit creation confirmed! ID: ${applicationAuditId}`);
+                progressCallback(45, 'Application Audit confirmed!');
             }
+        } catch (error) {
+            console.error(`❌ Error polling Application Audit status:`, error.message);
+            throw error;
         }
-
-        // Use the bulk-create-and-link endpoint exactly like the UI does
-        if (!bulkCreateSource) {
-            console.warn('⚠️  No bulk create source found via API - using hardcoded value from UI');
-
-            // Hardcoded bulk create source ID observed from the LogicGate UI
-            // This is the ID used when clicking "Create Application Audits" button in the UI
-            const HARDCODED_BULK_CREATE_SOURCE_ID = 'jnP9gzb6';
-
-            bulkCreateSource = {
-                id: HARDCODED_BULK_CREATE_SOURCE_ID
-            };
-
-            console.log(`✅ Using hardcoded bulk create source ID: ${bulkCreateSource.id}`);
-        }
-
-        console.log(`🔗 Creating Application Audit via bulk-create-and-link`);
-        console.log(`📤 Using bulkCreateSourceId: ${bulkCreateSource.id}, parentRecordId: ${auditId}, sourceRecordIds: [${applicationId}]`);
-
-        const bulkCreateUrl = `${BASE_URL}/api/v1/bulk-create-and-link`;
-        const bulkCreateRequestBody = {
-            bulkCreateSourceId: bulkCreateSource.id,
-            parentRecordId: auditId,
-            sourceRecordIds: [applicationId]
-        };
-
-        console.log('📤 Bulk create request:', JSON.stringify(bulkCreateRequestBody, null, 2));
-
-        const bulkCreateResponse = await fetch(bulkCreateUrl, {
-            method: 'POST',
-            headers: {
-                Authorization: `Bearer ${token}`,
-                Accept: 'application/json',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(bulkCreateRequestBody)
-        });
-
-        if (!bulkCreateResponse.ok) {
-            const errorBody = await bulkCreateResponse.text();
-            console.error(`❌ Failed to bulk create and link: ${bulkCreateResponse.status} ${errorBody}`);
-            throw new Error(`Failed to bulk create and link: ${bulkCreateResponse.status} ${errorBody}`);
-        }
-
-        console.log(`✅ Successfully initiated bulk create and link for Application Audit`);
-
-        // The bulk create operation is asynchronous, so we return success immediately
-        // The actual record creation happens in the background
-        return {
-            auditId: auditId,
-            applicationId: applicationId,
-            status: 'created',
-            message: 'Application audit creation initiated successfully'
-        };
     }
 
-    // If we get here, we couldn't create via workflow link
-    if (!auditId) {
-        throw new Error('Cannot create application audit without an audit parent - no workflow link layout available');
-    }
+    // Phase 2: bulk-create Control Evaluations under the new Application Audit.
+    // applicationId (the application record) is passed directly — NOT applicationAuditId.
+    // The workflow IDs are resolved from the same applicationWorkflows already fetched above.
+    progressCallback(50, 'Application Audit created. Bulk creating Control Evaluations...');
 
-    throw new Error('Could not determine correct method to create Application Audit record');
+    // Scale bulkCreateControlEvaluationsData's 0–100 progress into the 50–95% range
+    const evalProgress = (p, msg) => progressCallback(50 + Math.round(p * 0.45), msg);
+    const controlEvalResult = await bulkCreateControlEvaluationsData(applicationAuditId, applicationId, evalProgress);
+
+    return {
+        auditId,
+        applicationId,
+        applicationAuditId,
+        controlEvaluations: controlEvalResult,
+        status: 'created',
+        message: `Application Audit created and ${controlEvalResult.created} Control Evaluations confirmed`
+    };
 }
 
 /**
@@ -946,30 +561,41 @@ export async function createAuditRecord(req, res) {
 
 /**
  * POST /api/audits/application-audit
- * Create a new application audit record
+ * Queue an async job to create an application audit + bulk-create its control evaluations.
+ * Returns 202 immediately with a jobId — client tracks progress via WebSocket/polling.
  */
 export async function createApplicationAuditRecord(req, res) {
     logRequest(req);
 
     const { auditId, applicationId } = req.body;
 
-    if (!applicationId) {
-        return res.status(400).json(createErrorResponse(req, 'Missing required field: applicationId', 400));
-    }
-
-    // Get user email from request headers
-    const userEmail = req.headers['x-user-email'] || req.headers['x-ms-client-principal-name'] || req.headers['user-email'];
-
-    if (!userEmail) {
-        console.warn('⚠️  No user email found in request headers');
+    if (!auditId || !applicationId) {
+        return res.status(400).json(createErrorResponse(req, 'Missing required fields: auditId, applicationId', 400));
     }
 
     try {
-        const result = await createApplicationAuditRecordData(auditId, applicationId, userEmail);
-        const successResponse = createSuccessResponse(req, result);
-        return res.status(201).json(successResponse);
+        const jobManager = JobManager.getInstance();
+        const userId = (
+            req.headers['x-user-email'] ||
+            req.headers['user-email'] ||
+            req.ip ||
+            'unknown'
+        ).toLowerCase();
+
+        const jobId = jobManager.createJob('createApplicationAudit', { auditId, applicationId }, null, userId);
+
+        console.log(`✅ Queued Application Audit creation as job ${jobId}`);
+
+        const successResponse = createSuccessResponse(req, {
+            jobId,
+            status: 'queued',
+            message: 'Application Audit creation queued. Connect to WebSocket for updates.',
+            websocketUrl: '/ws'
+        });
+
+        return res.status(202).json(successResponse);
     } catch (error) {
-        console.error(`❌ Error creating application audit record:`, error.message);
+        console.error(`❌ Error queuing application audit creation:`, error.message);
         return res.status(500).json(createErrorResponse(req, error.message));
     }
 }

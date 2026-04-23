@@ -17,12 +17,23 @@
     flex-direction: column;
     flex: 1;
     padding: 1em;
-    margin: 0 0.5em; // Remove top/bottom margin, keep horizontal spacing
+    margin: 0 0.5em;
     min-height: 0;
-    height: 100%; // Fill height of container
-    width: 50%; // Each card takes 50% width
+    height: 100%;
+    width: 50%;
     max-width: 50%;
-    box-sizing: border-box; // Include padding in dimensions
+    box-sizing: border-box;
+}
+
+.rightColumn {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    width: 50%;
+    max-width: 50%;
+    margin: 0 0.5em;
+    min-height: 0;
+    gap: 0.5em;
 }
 
 .applicationContent {
@@ -278,7 +289,8 @@
         height: auto;
     }
 
-    .appCard {
+    .appCard,
+    .rightColumn {
         width: 100%;
         max-width: 100%;
         flex: none;

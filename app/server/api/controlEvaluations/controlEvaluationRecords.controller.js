@@ -119,146 +119,138 @@ export async function getControlEvaluationsForControlInstanceData(controlInstanc
 }
 
 /**
- * Bulk create control evaluation records for an application audit
- * Creates evaluations for all control instances linked to an application
- * @param {string} applicationAuditId - Application Audit record ID
- * @param {string} applicationId - Application record ID
+ * Bulk create control evaluation records for an application audit.
+ *
+ * How it works:
+ * The LogicGate bulk-create-and-link endpoint creates child records (Control Evaluations)
+ * for each source record (Control Instances linked to the application), all parented under
+ * the Application Audit. The workflow link that defines this relationship lives on the
+ * Application Audits CHAIN step — not on the Control Evaluations workflow itself.
+ *
+ * Payload: { bulkCreateSourceId, parentRecordId, sourceRecordIds }
+ *   - bulkCreateSourceId: discovered from the Application Audits CHAIN step's workflow link
+ *   - parentRecordId:     the Application Audit record
+ *   - sourceRecordIds:    all Control Instance IDs linked to the application
+ *
+ * @param {string} applicationAuditId - Application Audit record ID (parent)
+ * @param {string} applicationId - Application record ID (used to find linked Control Instances)
  * @returns {Promise<Object>} Result of bulk creation operation
  */
-export async function bulkCreateControlEvaluationsData(applicationAuditId, applicationId) {
+export async function bulkCreateControlEvaluationsData(applicationAuditId, applicationId, progressCallback = () => {}) {
     let token = await getToken();
     if (!token) throw new Error('Failed to get authentication token');
 
-    console.log(`🔍 Bulk creating control evaluations for application audit: ${applicationAuditId}`);
+    console.log(`🔍 Bulk creating control evaluations for application audit: ${applicationAuditId}, application: ${applicationId}`);
 
-    // Get application workflows
+    const RETRY_DELAY_MS = 5 * 60 * 1000; // 5 minutes
+    const REQUEST_TIMEOUT_MS = 30 * 1000;  // 30 seconds
+
+    // Hardcoded bulk create source ID — observed from LogicGate UI network traffic.
+    // Maps: Control Instances (source) → Control Evaluations (child) under an Application Audit (parent).
+    const BULK_CREATE_SOURCE_ID = 'yirBgxEh';
+
+    // Get all workflows in the application
     const applicationWorkflows = await getWorkflowsData({ 'application-id': APPLICATIONS_ID });
 
-    // Find the Control Evaluations workflow
-    const controlEvaluationsWorkflow = await getWorkflowData(
-        applicationWorkflows.find(item => item.name === "Control Evaluations")?.id
-    );
+    // Extract workflow IDs directly — no need to fetch full workflow objects
+    const controlEvaluationsWorkflowId = applicationWorkflows.find(w => w.name === "Control Evaluations")?.id;
+    if (!controlEvaluationsWorkflowId) throw new Error('Control Evaluations workflow not found');
 
-    if (!controlEvaluationsWorkflow) {
-        throw new Error('Control Evaluations workflow not found');
-    }
+    const controlInstancesWorkflowId = applicationWorkflows.find(w => w.name === "Control Instances")?.id;
+    if (!controlInstancesWorkflowId) throw new Error('Control Instances workflow not found');
 
-    // Find the Control Instances workflow
-    const controlInstancesWorkflowSummary = applicationWorkflows.find(item =>
-        item.name === "Control Instances" || item.name === "Security Control Instances"
-    );
+    // Get all control instances linked to this application record
+    const applicationRecord = await getLinkedRecordsData(applicationId, [controlInstancesWorkflowId]);
+    const linkedControls = applicationRecord.linkedRecords.workflow[controlInstancesWorkflowId];
 
-    if (!controlInstancesWorkflowSummary) {
-        throw new Error('Control Instances workflow not found');
-    }
-
-    const controlInstancesWorkflow = await getWorkflowData(controlInstancesWorkflowSummary.id);
-
-    // Get all control instances linked to the application
-    const linkedRecords = await getLinkedRecordsData(
-        applicationId,
-        [controlInstancesWorkflow.workflow.id],
-        APPLICATIONS_ID
-    );
-
-    const controlInstances = linkedRecords?.linkedRecords?.workflow?.[controlInstancesWorkflow.workflow.id] || [];
-
-    if (controlInstances.length === 0) {
+    if (!linkedControls || linkedControls.length === 0) {
         console.warn('⚠️  No control instances found for application');
-        return {
-            created: 0,
-            failed: 0,
-            message: 'No control instances found for application'
-        };
+        return { created: 0, applicationAuditId, message: 'No control instances found for application' };
     }
 
-    console.log(`📋 Found ${controlInstances.length} control instances to create evaluations for`);
+    const sourceRecordIds = linkedControls.map(r => r.record.id);
+    console.log(`📋 Found ${sourceRecordIds.length} control instances`);
 
-    // Get the Control Evaluation workflow's ORIGIN step
-    const originStep = controlEvaluationsWorkflow.steps.find(step => step.type === "ORIGIN");
-    if (!originStep) {
-        throw new Error('Origin step not found in Control Evaluations workflow');
-    }
+    const bulkCreateUrl = `${BASE_URL}/api/v1/bulk-create-and-link`;
+    const bulkCreateBody = {
+        bulkCreateSourceId: BULK_CREATE_SOURCE_ID,
+        parentRecordId: applicationAuditId,
+        sourceRecordIds: sourceRecordIds
+    };
 
-    // Get the workflow link section for bulk create
-    const formRes = await fetch(`${BASE_URL}/api/v1/form/sections?step=${originStep.id}`, {
-        method: 'GET',
-        headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        }
-    });
+    console.log(`🚀 POST ${bulkCreateUrl}`);
+    console.log(`📤 Request body:`, JSON.stringify(bulkCreateBody, null, 2));
+    progressCallback(10, `Sending bulk create request for ${sourceRecordIds.length} Control Evaluations...`);
 
-    if (!formRes.ok) {
-        throw new Error(`Failed to fetch form sections: ${formRes.status}`);
-    }
+    let retryCount = 5;
+    while (true) {
+        if (retryCount > 0) {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
-    const formSections = await formRes.json();
-    const workflowLink = formSections.find(item =>
-        item.name?.includes('Control Instance') ||
-        item.type === 'WORKFLOW_LINK'
-    );
+                const bulkCreateResponse = await fetch(bulkCreateUrl, {
+                    method: 'POST',
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(bulkCreateBody),
+                    signal: controller.signal
+                });
 
-    if (!workflowLink || !workflowLink.id) {
-        throw new Error('Workflow link not found for Control Instances');
-    }
+                clearTimeout(timeoutId);
 
-    // Get the bulk create workflow sources
-    const bulkCreateSourcesRes = await fetch(
-        `${BASE_URL}/api/v1/bulk-create-workflow-source/section/workflow-link/${workflowLink.id}`,
-        {
-            method: 'GET',
-            headers: {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json'
+                if (!bulkCreateResponse.ok) {
+                    console.warn(`⚠️ Bulk create request failed: ${bulkCreateResponse.status}, retrying in ${REQUEST_TIMEOUT_MS / 1000}s... (${retryCount} left)`);
+                    await new Promise(resolve => setTimeout(resolve, REQUEST_TIMEOUT_MS));
+                    retryCount--;
+                } else {
+                    break;
+                }
+            } catch (error) {
+                if (error.name === 'AbortError' || error.code === 'ETIMEDOUT' || error.message.includes('timeout')) {
+                    console.log(`⏱️ Request timed out, retrying in 5 minutes...`);
+                    await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+                    continue;
+                } else {
+                    throw error;
+                }
             }
+        } else {
+            throw new Error('Failed to bulk create and link Control Evaluations after 5 retries');
         }
-    );
-
-    if (!bulkCreateSourcesRes.ok) {
-        throw new Error(`Failed to fetch bulk create sources: ${bulkCreateSourcesRes.status}`);
     }
 
-    const sources = await bulkCreateSourcesRes.json();
-    const sourceForControlInstances = sources.find(s =>
-        s.sourceWorkflow.id === controlInstancesWorkflow.workflow.id
-    );
+    console.log(`✅ Bulk create request accepted — polling for ${sourceRecordIds.length} Control Evaluations to appear...`);
+    progressCallback(40, 'Request accepted, waiting for Control Evaluations to appear...');
 
-    if (!sourceForControlInstances) {
-        throw new Error('Bulk create source not found for Control Instances workflow');
+    // Poll until all Control Evaluations are linked to the application audit record
+    let remaining = sourceRecordIds.length;
+    while (remaining > 0) {
+        try {
+            const auditRecord = await getLinkedRecordsData(applicationAuditId, [controlEvaluationsWorkflowId]);
+            const linkedEvals = auditRecord.linkedRecords.workflow[controlEvaluationsWorkflowId];
+            remaining = sourceRecordIds.length - linkedEvals.length;
+
+            if (remaining > 0) {
+                console.log(`📊 Records remaining: ${remaining}, checking again in 10 seconds...`);
+                progressCallback(60, `${remaining} of ${sourceRecordIds.length} Control Evaluations remaining...`);
+                await new Promise(resolve => setTimeout(resolve, 10000));
+            } else {
+                console.log(`✅ All ${sourceRecordIds.length} Control Evaluations confirmed!`);
+                progressCallback(90, `All ${sourceRecordIds.length} Control Evaluations confirmed!`);
+            }
+        } catch (error) {
+            console.error(`❌ Error polling Control Evaluation status:`, error.message);
+            throw error;
+        }
     }
-
-    // Extract control instance IDs
-    const sourceRecordIds = controlInstances.map(ci => ci.record.id);
-
-    console.log(`🚀 Starting bulk create and link for ${sourceRecordIds.length} control evaluations`);
-
-    // Perform bulk create and link
-    const bulkCreateResponse = await fetch(`${BASE_URL}/api/v1/bulk-create-and-link`, {
-        method: 'POST',
-        headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            bulkCreateWorkflowSourceId: sourceForControlInstances.id,
-            originRecordId: applicationAuditId,
-            sourceRecordIds: sourceRecordIds,
-            workflowLinkId: workflowLink.id
-        })
-    });
-
-    if (!bulkCreateResponse.ok) {
-        const errorBody = await bulkCreateResponse.text();
-        throw new Error(`Bulk create failed: ${bulkCreateResponse.status} ${errorBody}`);
-    }
-
-    console.log(`✅ Successfully bulk created ${sourceRecordIds.length} control evaluations`);
 
     return {
         created: sourceRecordIds.length,
-        failed: 0,
-        applicationAuditId: applicationAuditId,
+        applicationAuditId,
         message: `Successfully created ${sourceRecordIds.length} control evaluations`
     };
 }

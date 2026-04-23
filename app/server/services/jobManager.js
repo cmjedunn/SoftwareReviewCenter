@@ -130,6 +130,9 @@ class JobManager {
                 case 'deleteApplicationRecord':
                     result = await this.processDeleteApplicationRecord(jobId, job.data, progressCallback);
                     break;
+                case 'createApplicationAudit':
+                    result = await this.processCreateApplicationAudit(jobId, job.data, progressCallback);
+                    break;
                 default:
                     throw new Error(`Unknown job type: ${job.type}`);
             }
@@ -166,10 +169,22 @@ class JobManager {
 
         progressCallback(50, 'Deleting application record...');
 
-        // Pass the progress callback to your controller function  
+        // Pass the progress callback to your controller function
         const result = await deleteApplicationRecordData(recordId, progressCallback);
 
         return result;
+    }
+
+    /**
+     * 📋 Process Application Audit creation + Control Evaluations bulk create.
+     * Both phases are handled inside createApplicationAuditRecordData —
+     * the job manager just passes the parameters and progress callback through.
+     */
+    async processCreateApplicationAudit(jobId, { auditId, applicationId }, progressCallback) {
+        const { createApplicationAuditRecordData } = await import('../api/audits/auditRecords.controler.js');
+
+        progressCallback(5, 'Starting Application Audit and Control Evaluations creation...');
+        return await createApplicationAuditRecordData(auditId, applicationId, progressCallback);
     }
 
     /**

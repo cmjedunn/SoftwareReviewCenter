@@ -5,6 +5,7 @@ import { Card } from '../components/layout/Card';
 import DeleteButton from '../components/layout/DeleteButton';
 import EditButton from '../components/layout/EditButton';
 import AuditListCard from '../components/resource/AuditListCard';
+import NotificationContainer from '../components/resource/NotificationContainer';
 import styles from './styles/Application.module.scss';
 import { useAuthenticatedFetch } from '../hooks/useAutheticatedFetch';
 
@@ -18,6 +19,8 @@ export default function Application() {
     const navigate = useNavigate();
     const [isDeleting, setIsDeleting] = useState(false);
     const [isCreatingAudit, setIsCreatingAudit] = useState(false);
+    const [auditJobId, setAuditJobId] = useState(null);
+    const [hasActiveAuditJob, setHasActiveAuditJob] = useState(false);
     const [debugExpanded, setDebugExpanded] = useState(false);
     const [environmentName, setEnvironmentName] = useState('Loading...');
 
@@ -192,6 +195,17 @@ export default function Application() {
         }
     };
 
+    // Handle audit job completion — reload to show new audit in list
+    const handleAuditJobCompleted = () => {
+        setAuditJobId(null);
+        setHasActiveAuditJob(false);
+    };
+
+    const handleAuditJobStarted = (jobId) => {
+        setAuditJobId(jobId);
+        setHasActiveAuditJob(true);
+    };
+
     // Handle create application audit functionality
     const handleCreateAppAudit = async () => {
         if (!applicationRecord?.id) return;
@@ -216,12 +230,9 @@ export default function Application() {
 
             if (auditsResponse.ok) {
                 const auditsData = await auditsResponse.json();
-                const audits = auditsData.data?.records || [];
+                const audits = auditsData.content || [];
 
                 console.log('📋 Total audits found:', audits.length);
-                if (audits.length > 0) {
-                    console.log('📋 Sample audit structure:', audits[0]);
-                }
 
                 // Search for audit by name (case-insensitive)
                 selectedAudit = audits.find(audit =>
@@ -240,14 +251,8 @@ export default function Application() {
                 const currentYear = new Date().getFullYear().toString();
                 const createAuditResponse = await fetch(`${backend}/api/audits`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        name: thirdPartyName,
-                        year: currentYear,
-                        scope: ''
-                    })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: thirdPartyName, year: currentYear, scope: '' })
                 });
 
                 if (!createAuditResponse.ok) {
@@ -258,7 +263,6 @@ export default function Application() {
                 const newAuditResult = await createAuditResponse.json();
                 console.log('📦 Full audit creation response:', newAuditResult);
 
-                // Extract audit data from response (properties are directly on the object)
                 selectedAudit = {
                     id: newAuditResult.id,
                     name: newAuditResult.name,
@@ -268,20 +272,16 @@ export default function Application() {
                 console.log('✅ Created new audit data:', selectedAudit);
             }
 
-            // Verify we have a valid audit with an ID
-            if (!selectedAudit || !selectedAudit.id) {
-                console.error('❌ Invalid audit object:', selectedAudit);
+            if (!selectedAudit?.id) {
                 throw new Error('Failed to get valid audit ID');
             }
 
-            console.log('📝 Creating application audit with auditId:', selectedAudit.id, 'applicationId:', applicationRecord.id);
+            console.log('📝 Queuing Application Audit creation — auditId:', selectedAudit.id, 'applicationId:', applicationRecord.id);
 
-            // Create the application audit linked to the audit
+            // Queue the application audit + control evaluations job (returns 202 immediately)
             const response = await fetch(`${backend}/api/audits/application-audit`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     auditId: selectedAudit.id,
                     applicationId: applicationRecord.id
@@ -290,16 +290,14 @@ export default function Application() {
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.error || `Failed to create application audit: ${response.status}`);
+                throw new Error(errorData.error || `Failed to queue application audit: ${response.status}`);
             }
 
             const result = await response.json();
-            console.log('✅ Application audit created successfully:', result);
+            console.log('✅ Application Audit job queued:', result);
 
-            alert(`Application audit created successfully and linked to Third Party: ${thirdPartyName}`);
-
-            // Refresh the page to show the new audit in the list
-            window.location.reload();
+            // Hand the jobId off to the notification container — it drives all further status updates
+            handleAuditJobStarted(result.jobId);
 
         } catch (error) {
             console.error('❌ Error creating application audit:', error);
@@ -397,7 +395,7 @@ export default function Application() {
                                 <button
                                     type="button"
                                     onClick={handleCreateAppAudit}
-                                    disabled={isCreatingAudit}
+                                    disabled={isCreatingAudit || hasActiveAuditJob}
                                     className={styles.createAuditButton}
                                     title="Create a new application audit for this application"
                                 >
@@ -453,8 +451,15 @@ export default function Application() {
                         </div>
                     </Card>
 
-                    {/* Audit List Card */}
-                    <AuditListCard applicationId={applicationRecord.id} />
+                    {/* Right column: audit list + notification stacked vertically */}
+                    <div className={styles.rightColumn}>
+                        <AuditListCard applicationId={applicationRecord.id} />
+                        <NotificationContainer
+                            jobId={auditJobId}
+                            onJobStarted={handleAuditJobStarted}
+                            onJobCompleted={handleAuditJobCompleted}
+                        />
+                    </div>
                 </div>
             </AuthContent>
         </PageWrapper>
